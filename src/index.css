@@ -1,0 +1,49 @@
+@import "tailwindcss";
+@theme {
+  /* --- Cosmic Dark Theme --- */
+  --color-background: #0d1117; /* A deep, rich space blue, not pure black */
+  --color-surface: rgba(
+    23,
+    27,
+    38,
+    0.5
+  ); /* Semi-transparent surface for glass effect */
+
+  --color-primary: #4f5dff; /* Kept your vibrant blue */
+  --color-secondary: #d53dff; /* Kept your vibrant purple */
+  --color-accent: #29d5ff; /* Kept your vibrant cyan */
+
+  --color-text-primary: #e6edf3; /* A bright, clear text color, easy on the eyes */
+  --color-text-secondary: #848d97; /* A softer gray for secondary text */
+
+  /* New variables for glow and glass effects */
+  --color-border-glow: rgba(
+    255,
+    255,
+    255,
+    0.1
+  ); /* Subtle border for glass cards */
+  --shadow-glow: rgba(
+    79,
+    93,
+    255,
+    0.3
+  ); /* A glow effect using your primary color */
+}
+
+/* Add these styles directly below your @theme block */
+body {
+  background-color: var(--color-background);
+  /* This is the magic: A subtle, large radial gradient to give the background depth and life */
+  background-image: radial-gradient(
+      circle at 20% 20%,
+      rgba(79, 93, 255, 0.1),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 80% 70%,
+      rgba(213, 61, 255, 0.08),
+      transparent 40%
+    );
+  background-attachment: fixed;
+}
