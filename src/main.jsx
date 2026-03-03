@@ -6,7 +6,10 @@ import "./index.css"; // Your Tailwind CSS + theme file
 import App from "./App";
 import Home from "./pages/Home";
 import Agents from "./pages/Agents";
-
+import Chat from "./pages/Chat";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import Models from "./pages/Models";
 // Define the application routes
 const router = createBrowserRouter([
   {
@@ -19,8 +22,18 @@ const router = createBrowserRouter([
       },
       {
         path: "agents",
-        Component: Agents,  
+        Component: Agents,
       },
+      {
+        path: "models",
+        Component: Models,
+      },
+      {
+        path: "chat",
+        Component: Chat,
+      },
+      { path: "auth", Component: Auth },
+      { path: "dashboard", Component: Dashboard },
       // You can add more pages here later, e.g.:
       // {
       //   path: 'about',
@@ -33,5 +46,5 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <RouterProvider router={router} />
-  </React.StrictMode>
+  </React.StrictMode>,
 );

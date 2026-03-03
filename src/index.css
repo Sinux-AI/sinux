@@ -1,49 +1,87 @@
 @import "tailwindcss";
+
 @theme {
-  /* --- Cosmic Dark Theme --- */
-  --color-background: #0d1117; /* A deep, rich space blue, not pure black */
-  --color-surface: rgba(
-    23,
-    27,
-    38,
-    0.5
-  ); /* Semi-transparent surface for glass effect */
+  --color-primary: #9D4EDD;
+  --color-secondary: #FF0055;
+  --color-accent: #00F0FF;
+  --color-background: #030305;
+  --color-surface: rgba(10, 10, 15, 0.4);
+  --color-surface-raised: rgba(15, 15, 20, 0.6);
+  --color-border-glow: rgba(255, 255, 255, 0.1);
+  --color-text-primary: #F4F4F5;
+  --color-text-secondary: #8A8F98;
+  --color-success: #00FF9D;
+  --color-info: #00B8FF;
+  --color-warning: #FFB800;
+  --color-neutral: #3A3F48;
 
-  --color-primary: #4f5dff; /* Kept your vibrant blue */
-  --color-secondary: #d53dff; /* Kept your vibrant purple */
-  --color-accent: #29d5ff; /* Kept your vibrant cyan */
+  --font-mono: "Space Grotesk", sans-serif;
+  --font-sans: "Inter", sans-serif;
+  --font-display: "Syne", sans-serif;
+  --font-tech: "Space Grotesk", sans-serif;
+  --font-insane: "Syne", sans-serif;
 
-  --color-text-primary: #e6edf3; /* A bright, clear text color, easy on the eyes */
-  --color-text-secondary: #848d97; /* A softer gray for secondary text */
+  --shadow-neon-primary: 0 0 15px rgba(157, 78, 221, 0.3);
+  --shadow-neon-pink: 0 0 15px rgba(255, 0, 85, 0.3);
+  --shadow-neon-accent: 0 0 15px rgba(0, 240, 255, 0.3);
+  --shadow-glass-inner: inset 0 2px 20px rgba(255, 255, 255, 0.05);
 
-  /* New variables for glow and glass effects */
-  --color-border-glow: rgba(
-    255,
-    255,
-    255,
-    0.1
-  ); /* Subtle border for glass cards */
-  --shadow-glow: rgba(
-    79,
-    93,
-    255,
-    0.3
-  ); /* A glow effect using your primary color */
+  /* Animation Overrides if used */
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-gradient-x: gradient-x 10s ease infinite;
 }
 
-/* Add these styles directly below your @theme block */
-body {
-  background-color: var(--color-background);
-  /* This is the magic: A subtle, large radial gradient to give the background depth and life */
-  background-image: radial-gradient(
-      circle at 20% 20%,
-      rgba(79, 93, 255, 0.1),
-      transparent 40%
-    ),
-    radial-gradient(
-      circle at 80% 70%,
-      rgba(213, 61, 255, 0.08),
-      transparent 40%
-    );
-  background-attachment: fixed;
+@layer base {
+  body {
+    @apply bg-[#030305] text-[#F4F4F5] font-sans antialiased selection:bg-[#9D4EDD] selection:text-white;
+  }
+  
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    transition: background-color 0.3s;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(157, 78, 221, 0.5); /* Primary color */
+  }
+}
+
+@layer utilities {
+  .text-insane {
+    @apply font-display font-bold tracking-tighter uppercase;
+  }
+
+  .text-tech {
+    @apply font-tech tracking-wide uppercase text-xs;
+  }
+
+  .glass-panel {
+    @apply bg-surface backdrop-blur-2xl border border-border-glow rounded-[2rem] shadow-glass-inner;
+  }
+  
+  .glass-panel-interactive {
+    @apply bg-surface backdrop-blur-2xl border border-border-glow rounded-[2rem] shadow-glass-inner transition-all duration-300 hover:border-primary/30 hover:bg-surface-raised hover:shadow-neon-primary;
+  }
+
+  .glow-text-primary {
+    @apply text-primary drop-shadow-[0_0_12px_rgba(157,78,221,0.6)];
+  }
+  
+  .glow-text-accent {
+    @apply text-accent drop-shadow-[0_0_12px_rgba(0,240,255,0.6)];
+  }
+
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
 }
