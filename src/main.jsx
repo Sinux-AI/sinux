@@ -10,6 +10,11 @@ import Chat from "./pages/Chat";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Models from "./pages/Models";
+import Workflows from "./pages/Workflows";
+import Integrations from "./pages/Integrations";
+import WalletPage from "./pages/Wallet";
+import Pricing from "./pages/Pricing";
+import Knowledge from "./pages/Knowledge";
 // Define the application routes
 const router = createBrowserRouter([
   {
@@ -21,6 +26,10 @@ const router = createBrowserRouter([
         element: <Home />,
       },
       {
+        path: "knowledge",
+        Component: Knowledge,
+      },
+      {
         path: "agents",
         Component: Agents,
       },
@@ -29,7 +38,26 @@ const router = createBrowserRouter([
         Component: Models,
       },
       {
+        path: "workflows",
+        Component: Workflows,
+      },
+      {
+        path: "integrations",
+        Component: Integrations,
+      },
+      {
+        path: "wallet",
+        Component: WalletPage,
+      },
+      {
+        path: "pricing",
+        Component: Pricing,
+      },
+      {
         path: "chat",
+
+
+
         Component: Chat,
       },
       { path: "auth", Component: Auth },

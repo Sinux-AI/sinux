@@ -21,9 +21,9 @@ import { Link } from "react-router-dom";
 export const Features = () => {
   return (
     <>
-      {/* === SECTION 1: HOW INTEGRATION WORKS === */}
+      {/* === SECTION 1: HOW CONNECTIVITY WORKS === */}
       <section className="grid grid-cols-1 md:grid-cols-12 gap-6 relative z-10 mb-20 animate-in fade-in duration-1000 delay-300 slide-in-from-bottom-12">
-        {/* INTEGRATION AGENT - MAIN CARD */}
+        {/* ENTERPRISE CONNECTIVITY - MAIN CARD */}
         <GlassCard interactive className="md:col-span-8 min-h-[460px] flex flex-col p-10 group overflow-hidden">
           <div className="absolute -bottom-1/2 -right-1/4 w-[600px] h-[600px] bg-primary/20 blur-[100px] rounded-full pointer-events-none group-hover:bg-primary/30 transition-colors duration-700" />
           
@@ -32,11 +32,11 @@ export const Features = () => {
               <div className="flex items-center gap-3 text-primary mb-6">
                 <Terminal size={20} className="shadow-neon-primary" />
                 <span className="text-tech tracking-[0.3em] text-primary">
-                  INTEGRATION ENGINE
+                  ENTERPRISE CONNECTIVITY
                 </span>
               </div>
               <h3 className="text-4xl md:text-6xl text-insane text-white mix-blend-screen drop-shadow-xl group-hover:glow-text-primary transition-all">
-                Auto-Build <br />Tools from Docs
+                Auto-Build <br />Business Tools
               </h3>
             </div>
             <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center bg-white/5 backdrop-blur-md group-hover:border-primary group-hover:bg-primary group-hover:scale-110 transition-all duration-500 shadow-glass-inner">
@@ -50,9 +50,9 @@ export const Features = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-auto relative z-10">
             <p className="text-text-secondary text-base lg:text-lg leading-relaxed font-sans max-w-sm">
-              Paste any API documentation — OpenWeatherMap, Twilio, Stripe, you name it.
-              Sinux reads the docs, extracts endpoints, and builds production-ready
-              tools for your agents automatically.
+              Connect your entire tech stack effortlessly. Sinux ingests API 
+              documentation and protocols to build production-grade tools for 
+              your agent workforce automatically.
             </p>
             
             {/* Visual Terminal Element */}
@@ -63,10 +63,10 @@ export const Features = () => {
                 <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
                 <div className="w-3 h-3 rounded-full bg-primary/80 shadow-neon-primary" />
               </div>
-              <p className="text-text-secondary"># Parsing OpenWeatherMap docs...</p>
-              <p className="text-primary drop-shadow-[0_0_8px_rgba(157,78,221,0.6)]">{`> Extracted: GET /weather?q={city}`}</p>
-              <p className="text-text-secondary italic">{`// Building getWeather() tool...`}</p>
-              <p className="text-success">{`✓ Tool registered to Agent "Atlas"`}</p>
+              <p className="text-text-secondary"># Integrating Enterprise CRM docs...</p>
+              <p className="text-primary drop-shadow-[0_0_8px_rgba(157,78,221,0.6)]">{`> Extracted: POST /leads/sync`}</p>
+              <p className="text-text-secondary italic">{`// Mapping business logic...`}</p>
+              <p className="text-success">{`✓ Strategic tool registered to Agent "Atlas"`}</p>
               <div className="absolute bottom-6 right-6 animate-pulse w-3 h-6 bg-primary" />
             </div>
           </div>
@@ -84,7 +84,7 @@ export const Features = () => {
                 <p className="text-5xl md:text-7xl font-sans font-black italic tracking-tighter text-white group-hover:text-accent transition-colors drop-shadow-lg">
                   140<span className="text-3xl font-light">ms</span>
                 </p>
-                <p className="text-tech text-text-secondary mt-2 group-hover:text-white transition-colors">AVG RESPONSE TIME</p>
+                <p className="text-tech text-text-secondary mt-2 group-hover:text-white transition-colors">REAL-TIME INFERENCE</p>
               </div>
             </div>
           </GlassCard>
@@ -93,8 +93,8 @@ export const Features = () => {
              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-secondary to-accent opacity-50 group-hover:opacity-100 transition-opacity" />
             <Cpu className="text-secondary group-hover:drop-shadow-[0_0_12px_rgba(255,0,85,0.8)] transition-all duration-500" size={32} />
             <div>
-              <h4 className="text-2xl lg:text-3xl text-insane text-white group-hover:glow-text-primary transition-all">Multi-Model</h4>
-              <p className="text-tech text-secondary mt-3 shadow-neon-pink">Gemini / GPT-4 / Groq / Ollama</p>
+              <h4 className="text-2xl lg:text-3xl text-insane text-white group-hover:glow-text-primary transition-all">Intelligence Agnostic</h4>
+              <p className="text-tech text-secondary mt-3 shadow-neon-pink">Enterprise Grade Hub</p>
             </div>
           </GlassCard>
         </div>
@@ -113,10 +113,10 @@ export const Features = () => {
           </div>
           <div className="mt-12 z-10 relative">
             <h4 className="text-2xl text-insane text-white group-hover:text-black transition-colors duration-500">
-              Agent Garage
+              Agent Workforce
             </h4>
             <p className="text-sm mt-3 text-text-secondary group-hover:text-black/60 font-medium transition-colors duration-500">
-              Build agents with custom personalities, tools, memory, and knowledge bases.
+              Deploy specialized agents with deep domain expertise, custom memory, and secure knowledge bases.
             </p>
           </div>
         </GlassCard>
@@ -124,9 +124,9 @@ export const Features = () => {
         <GlassCard interactive className="md:col-span-4 p-8 flex flex-col justify-between group overflow-hidden">
           <Shield size={32} className="text-white/30 group-hover:text-white transition-colors" />
           <div className="mt-12">
-            <h4 className="text-2xl text-insane text-white group-hover:glow-text-accent transition-all">RAG Knowledge</h4>
+            <h4 className="text-2xl text-insane text-white group-hover:glow-text-accent transition-all">Secure Knowledge</h4>
             <p className="text-sm font-sans text-text-secondary mt-3 group-hover:text-white/80 transition-colors">
-              Upload PDFs, documents, and URLs. Your agents remember everything.
+              Proprietary RAG engine for secure indexing of documents, policies, and internal workflows.
             </p>
           </div>
         </GlassCard>
@@ -134,25 +134,27 @@ export const Features = () => {
         <GlassCard interactive className="md:col-span-4 p-8 flex flex-col justify-between group overflow-hidden">
            <Globe size={32} className="text-white/30 group-hover:text-white transition-colors" />
           <div className="mt-12">
-            <h4 className="text-2xl text-insane text-white group-hover:glow-text-primary transition-all">Deploy Anywhere</h4>
+            <h4 className="text-2xl text-insane text-white group-hover:glow-text-primary transition-all">Global Delivery</h4>
             <p className="text-sm font-sans text-text-secondary mt-3 group-hover:text-white/80 transition-colors">
-              Ship as a REST API, website widget, Discord bot, or Slack integration.
+              Deploy across Slack, Discord, or your internal infrastructure with unified security protocols.
             </p>
           </div>
         </GlassCard>
       </section>
 
-      {/* === SECTION 2: USE CASES === */}
+
+      {/* === SECTION 2: BUSINESS SOLUTIONS === */}
       <section id="services" className="relative z-10 mb-24">
         <div className="text-center mb-16">
           <span className="text-tech text-primary tracking-[0.3em] text-xs font-bold mb-4 block">
-            BUILT FOR EVERYONE
+            STRATEGIC IMPACT
           </span>
           <h2 className="text-4xl md:text-5xl text-insane text-white mb-4">
-            Who Uses Sinux?
+            Enterprise Solutions
           </h2>
           <p className="text-text-secondary font-sans text-lg max-w-2xl mx-auto">
-            From solo developers to enterprise teams — Sinux adapts to any workflow.
+            Sinux scales with your organization, providing specialized AI workforce 
+            solutions across critical departments.
           </p>
         </div>
 
@@ -160,23 +162,23 @@ export const Features = () => {
           {[
             {
               icon: <Briefcase size={28} className="text-primary" />,
-              title: "Law Firms",
-              desc: "Automate document review, contract parsing, and legal research with custom agents trained on your practice area.",
+              title: "Legal Operations",
+              desc: "Automate contract analysis and document discovery with specialists trained on legal precedents and corporate policy.",
             },
             {
               icon: <Code2 size={28} className="text-accent" />,
-              title: "Developers",
-              desc: "Build AI-powered features into your product with Sinux's REST API. Configure agents dynamically per request.",
+              title: "Digital Engineering",
+              desc: "Accelerate development cycles with autonomous coding agents that integrate directly with your CI/CD pipelines.",
             },
             {
               icon: <FlaskConical size={28} className="text-secondary" />,
-              title: "Researchers",
-              desc: "Synthesize literature, analyze datasets, and generate reports — with agents that remember your entire corpus.",
+              title: "R&D Intelligence",
+              desc: "Synthesize research, analyze market trends, and generate strategic reports with agents tied to your proprietary data.",
             },
             {
-              icon: <Users size={28} className="text-white" />,
-              title: "Teams & Agencies",
-              desc: "Deploy internal copilots for support, onboarding, or knowledge management across your organization.",
+              icon: <Shield size={28} className="text-success" />,
+              title: "Compliance & Risk",
+              desc: "Maintain watertight security with automated audit agents that monitor communications and enforce legal guardrails.",
             },
           ].map((item) => (
             <GlassCard key={item.title} interactive className="p-8 flex flex-col group">
@@ -189,6 +191,7 @@ export const Features = () => {
           ))}
         </div>
       </section>
+
 
       {/* === SECTION 3: PRICING === */}
       <section id="pricing" className="relative z-10 mb-24">

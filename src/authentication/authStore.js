@@ -7,15 +7,24 @@ export const useAuthStore = create()(
     displayName: "",
     tier: 0,
     role: 1,
+    organizationId: null,
+    walletBalance: 0,
+    isLocked: false,
+    
     updateEmail: (newEmail) => set({ email: newEmail }),
     updateDisplayName: (newDisplayName) => set({ displayName: newDisplayName }),
     updateTier: (newTier) => set({ tier: newTier }),
     updateRole: (newRole) => set({ role: newRole }),
-    getEmail: () => get({ email }),
-    getDisplayName: () => get({ displayName }),
-    getTier: () => get({ tier }),
-    getRole: () => get({ role }),
+    updateOrganization: (orgId) => set({ organizationId: orgId }),
+    updateBilling: (balance, locked) => set({ walletBalance: balance, isLocked: locked }),
+    
+    getEmail: () => get().email,
+    getDisplayName: () => get().displayName,
+    getTier: () => get().tier,
+    getRole: () => get().role,
+    getIsLocked: () => get().isLocked,
   })),
+
   {
     name: "user-storage",
     storage: createJSONStorage(() => sessionStorage),

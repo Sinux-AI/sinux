@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Bot,
   Zap,
@@ -6,85 +6,120 @@ import {
   Activity,
   ChevronLeft,
   ChevronRight,
+  Plus,
+  Save,
+  Trash2,
+  ShieldCheck,
+  Database,
+  BrainCircuit,
+  Info,
+  Clock,
+  Cpu
 } from "lucide-react";
 import { GlassCard } from "../components/ui/GlassCard";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-
-const AGENT_DATA = [
-  {
-    id: "Atlas",
-    role: "Research Agent",
-    desc: "Synthesizes massive datasets into actionable intel.",
-    speed: 85,
-    accuracy: 95,
-    creativity: 40,
-    reputation: 5,
-    build: "v1.4.0",
-  },
-  {
-    id: "Nexus",
-    role: "Deep Diver",
-    desc: "Navigates complex codebases and logic structures.",
-    speed: 60,
-    accuracy: 90,
-    creativity: 70,
-    reputation: 4,
-    build: "v1.8.9",
-  },
-  {
-    id: "Sentinel",
-    role: "Security Agent",
-    desc: "Hardened protocols for audit and vulnerability detection.",
-    speed: 95,
-    accuracy: 99,
-    creativity: 10,
-    reputation: 5,
-    build: "v1.0.0",
-  },
-  {
-    id: "Harper",
-    role: "Energetic Agent",
-    desc: "Creative powerhouse for marketing and brainstorming.",
-    speed: 80,
-    accuracy: 70,
-    creativity: 98,
-    reputation: 4,
-    build: "v1.2.5",
-  },
-];
+import { useAuthStore } from "../authentication/authStore";
+import { getAgentsAsync, createAgentAsync, updateAgentAsync, deleteAgentAsync } from "../services/agentService";
+import { toast } from "react-hot-toast";
 
 function Agents() {
+  const { organizationId } = useAuthStore();
+  const [agents, setAgents] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const selected = AGENT_DATA[selectedIndex];
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [editData, setEditData] = useState(null);
+
+  const selected = agents[selectedIndex] || {
+    name: "Select Agent",
+    role: "No agents found",
+    description: "Create your first AI agent to start building specialized workflows.",
+    capabilities: [],
+    baseEngine: "GPT-4",
+    temperature: 0.7
+  };
+
+  useEffect(() => {
+    fetchAgents();
+  }, [organizationId]);
+
+  const fetchAgents = async () => {
+    setLoading(true);
+    try {
+      const data = await getAgentsAsync(organizationId);
+      setAgents(data);
+    } catch (err) {
+      toast.error("Failed to sync agents.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handlePrev = () => {
-    setSelectedIndex((prev) => (prev > 0 ? prev - 1 : AGENT_DATA.length - 1));
+    if (agents.length === 0) return;
+    setSelectedIndex((prev) => (prev > 0 ? prev - 1 : agents.length - 1));
+    setIsEditing(false);
   };
 
   const handleNext = () => {
-    setSelectedIndex((prev) => (prev < AGENT_DATA.length - 1 ? prev + 1 : 0));
+    if (agents.length === 0) return;
+    setSelectedIndex((prev) => (prev < agents.length - 1 ? prev + 1 : 0));
+    setIsEditing(false);
+  };
+
+  const startEditing = () => {
+    setEditData({ ...selected });
+    setIsEditing(true);
+  };
+
+  const saveChanges = async () => {
+    try {
+      if (selected.id) {
+        await updateAgentAsync(selected.id, editData);
+        toast.success("Agent configuration updated.");
+      } else {
+        await createAgentAsync({ ...editData, organizationId });
+        toast.success("New agent created.");
+      }
+      setIsEditing(false);
+      fetchAgents();
+    } catch (err) {
+      toast.error("Save failed. Please check your connection.");
+    }
   };
 
   return (
     <div className="bg-background pb-20 overflow-x-hidden relative isolate max-w-[1400px] mx-auto px-4 sm:px-8 w-full">
-      {/* Background Orbs specific to this page */}
+      {/* Background Orbs */}
       <div className="absolute top-[30%] -right-[10%] w-[500px] h-[500px] bg-primary/10 blur-[150px] rounded-full pointer-events-none -z-10" />
       <div className="absolute -bottom-[20%] -left-[10%] w-[600px] h-[600px] bg-secondary/10 blur-[150px] rounded-full pointer-events-none -z-10" />
 
       <PageHeader 
-        title="Agent Garage" 
-        subtitle="High-spec tuning vault. Trade, fine-tune, and deploy autonomous nodes." 
+        title="AI Agents" 
+        subtitle="Manage your specialized AI team. Configure their base intelligence, grant tool permissions, and define their core objectives." 
       />
 
-      {/* --- AGENT GARAGE (The Tunnel) --- */}
+      {/* --- AGENT HUB --- */}
       <div className="flex flex-col items-center mb-16 relative">
-        <h2 className="text-tech tracking-[0.4em] text-primary shadow-neon-primary mb-8 animate-pulse text-center">
-          // SHOWCASE_VAULT
-        </h2>
+        <div className="flex justify-between items-center w-full max-w-5xl mb-12">
+           <div className="space-y-1">
+             <h2 className="text-tech tracking-[0.4em] text-primary shadow-neon-primary uppercase font-bold text-xs">
+              // ACTIVE_AGENTS: {loading ? 'SYNCING...' : agents.length}
+            </h2>
+            <p className="text-[10px] text-text-secondary uppercase tracking-[0.2em] opacity-50 font-tech font-bold">Sinux Management Interface</p>
+          </div>
+          <Button variant="primary" size="md" className="rounded-full shadow-neon-primary px-8 h-12 font-bold tracking-wider" onClick={() => {
+            setAgents([...agents, { name: "New Agent", role: "Researcher", baseEngine: "GPT-4" }]);
+            setSelectedIndex(agents.length);
+            startEditing();
+          }}>
+            <Plus size={18} className="mr-2" /> Add Agent
+          </Button>
+        </div>
 
-        {/* Agent 3D Placeholder & Navigation */}
+        {/* Agent Visualizer & Navigation */}
         <div className="flex items-center justify-center w-full max-w-5xl mx-auto gap-4 md:gap-8 mb-8">
           <button 
             onClick={handlePrev}
@@ -93,25 +128,27 @@ function Agents() {
             <ChevronLeft size={32} className="text-text-secondary group-hover:text-primary transition-colors" />
           </button>
 
-          <div className="flex-1 flex flex-col items-center justify-center relative h-[300px] md:h-[450px] rounded-[3rem] border border-white/5 bg-gradient-to-b from-white/5 to-transparent overflow-hidden shadow-glass-inner">
-             {/* 3D Model Placeholder */}
+          <div className="flex-1 flex flex-col items-center justify-center relative h-[350px] md:h-[500px] rounded-[3.5rem] border border-white/10 bg-gradient-to-b from-white/5 via-black/40 to-transparent overflow-hidden shadow-2xl backdrop-blur-3xl group/canvas">
+             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(157,78,221,0.1)_0%,transparent_70%)] pointer-events-none" />
              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="text-center group">
-                  <Bot size={80} className="mx-auto mb-4 text-white/5 group-hover:text-primary/10 transition-colors duration-1000" />
-                  <p className="text-tech text-text-secondary/30 tracking-widest uppercase text-sm">
-                    [ 3D_MODEL_RENDER_SPACE ]
+                  <Bot size={160} className={`mx-auto mb-6 transition-all duration-1000 ${loading ? 'opacity-20 translate-y-10 focus-within:scale-105' : 'text-primary drop-shadow-[0_0_35px_rgba(157,78,221,0.6)] group-hover/canvas:scale-110'}`} />
+                  <p className="text-tech text-text-secondary/60 tracking-[0.3em] uppercase text-[10px] font-bold">
+                    {loading ? 'Reading Profile...' : 'Agent Standing By'}
                   </p>
                 </div>
              </div>
              
-             {/* Agent Identifier & Role Overlay */}
-             <div className="absolute bottom-6 md:bottom-10 left-6 md:left-10 z-10">
-               <span className="block text-6xl md:text-8xl lg:text-[10rem] text-insane text-white/10 drop-shadow-md tracking-tighter mix-blend-overlay leading-none">
-                 {selected.id}
+             {/* Large Backdrop Text */}
+             <div className="absolute bottom-10 left-12 z-10 pointer-events-none">
+               <span className="block text-6xl md:text-8xl lg:text-[10rem] text-insane text-white/[0.03] drop-shadow-md tracking-tighter mix-blend-overlay leading-none uppercase select-none font-bold">
+                 {selected.name}
                </span>
              </div>
-             <div className="absolute top-6 right-6 md:top-10 md:right-10 z-10">
-                <Badge variant="success" className="px-4 py-2 text-sm">{selected.role}</Badge>
+             <div className="absolute top-10 right-10 z-10">
+                <Badge variant={selected.id ? "success" : "warning"} className="px-6 py-2.5 text-xs uppercase tracking-[0.2em] shadow-neon-success rounded-full font-bold">
+                  {selected.role}
+                </Badge>
              </div>
           </div>
 
@@ -124,113 +161,200 @@ function Agents() {
         </div>
       </div>
 
-      {/* --- STATS & TUNING --- */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 animate-in slide-in-from-bottom-8 duration-700">
-        {/* Left Col: Spec Sheet */}
-        <GlassCard className="xl:col-span-5 flex flex-col relative overflow-hidden group">
+        {/* Left Col: Agent Configuration */}
+        <GlassCard className="xl:col-span-5 flex flex-col relative overflow-hidden group rounded-[2.5rem] p-10">
           <div className="absolute top-0 right-0 w-full h-1/2 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
           
-          <div className="flex flex-col sm:flex-row justify-between sm:items-end border-b border-border-glow pb-8 mb-8 gap-4 relative z-10">
-            <h3 className="text-5xl sm:text-7xl text-insane text-white mix-blend-screen drop-shadow-xl group-hover:glow-text-primary transition-all">
-              {selected.id}
-            </h3>
-            <div className="sm:text-right">
-              <p className="text-tech text-text-secondary uppercase tracking-widest mb-2">
-                BUILD_IDENTITY
-              </p>
-              <Badge variant="info" className="text-xs">{selected.build}</Badge>
+          <div className="flex flex-col sm:flex-row justify-between sm:items-end border-b border-white/5 pb-8 mb-10 gap-4 relative z-10">
+            <div className="flex-1">
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-tech text-text-secondary uppercase tracking-widest block mb-2">Agent Name</label>
+                    <input 
+                      type="text" 
+                      value={editData.name} 
+                      onChange={(e) => setEditData({...editData, name: e.target.value})}
+                      className="text-3xl bg-black/50 border border-white/10 rounded-xl px-4 py-2 outline-none text-white font-bold w-full focus:border-primary transition-all"
+                    />
+                  </div>
+                   <div>
+                    <label className="text-[10px] font-tech text-text-secondary uppercase tracking-widest block mb-2">Primary Role</label>
+                    <input 
+                      type="text" 
+                      value={editData.role} 
+                      onChange={(e) => setEditData({...editData, role: e.target.value})}
+                      className="text-lg bg-black/50 border border-white/10 rounded-xl px-4 py-2 outline-none text-white/70 w-full focus:border-secondary transition-all"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-5xl lg:text-6xl font-bold text-white drop-shadow-xl group-hover:glow-text-primary transition-all uppercase leading-tight">
+                    {selected.name}
+                  </h3>
+                  <p className="text-tech text-text-secondary uppercase tracking-[0.3em] font-bold text-[10px] mt-4 flex items-center gap-2">
+                    <BrainCircuit size={14} className="text-primary" /> Agent Identity & Intelligence
+                  </p>
+                </>
+              )}
             </div>
           </div>
 
           <div className="space-y-8 flex-1 relative z-10">
-            <NFSStatBar label="ACCELERATION (SPEED)" value={selected.speed} colorClass="bg-primary shadow-neon-primary" />
-            <NFSStatBar label="HANDLING (ACCURACY)" value={selected.accuracy} colorClass="bg-accent shadow-neon-accent" />
-            <NFSStatBar label="TOP_END (CREATIVITY)" value={selected.creativity} colorClass="bg-secondary shadow-neon-pink" />
+            <div className="p-8 bg-white/[0.03] rounded-[2rem] border border-white/5">
+              <h4 className="text-[10px] font-tech text-primary tracking-[0.2em] mb-4 uppercase font-bold">Objectives & Personality</h4>
+              {isEditing ? (
+                <textarea 
+                  value={editData.systemPrompt}
+                  onChange={(e) => setEditData({...editData, systemPrompt: e.target.value})}
+                  className="w-full bg-black/50 border border-white/10 p-5 rounded-2xl text-sm font-sans text-text-secondary min-h-[160px] outline-none focus:border-primary transition-all"
+                  placeholder="Define how this agent should behave and what its goals are..."
+                />
+              ) : (
+                <p className="text-sm font-sans text-text-secondary leading-relaxed italic opacity-80">
+                  "{selected.description || selected.systemPrompt || 'No specific goals defined for this agent yet.'}"
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="p-6 bg-white/[0.03] rounded-2zl border border-white/5 flex flex-col justify-between h-24">
+                <span className="text-[9px] font-tech text-text-secondary block uppercase tracking-widest font-bold">Model Tier</span>
+                <div className="flex items-center gap-2">
+                   <Cpu size={16} className="text-accent" />
+                   <p className="text-xl font-tech text-white uppercase">{selected.baseEngine || 'GPT-4'}</p>
+                </div>
+              </div>
+              <div className="p-6 bg-white/[0.03] rounded-2zl border border-white/5 flex flex-col justify-between h-24">
+                <span className="text-[9px] font-tech text-text-secondary block uppercase tracking-widest font-bold">Creativity (Temp)</span>
+                <div className="flex items-center gap-2">
+                   <Zap size={16} className="text-secondary" />
+                   <p className="text-xl font-tech text-white uppercase">{selected.temperature || 0.7}</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="flex justify-between items-center pt-8 mt-8 border-t border-border-glow relative z-10">
-            <span className="text-tech tracking-[0.2em] font-bold text-text-secondary uppercase inline-flex items-center gap-2">
-              <Zap size={14} className="text-accent" /> REPUTATION
-            </span>
-            <div className="flex gap-2">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-4 h-4 rounded-sm transition-all duration-300 rotate-45 ${
-                    i < selected.reputation
-                      ? "bg-accent shadow-neon-accent scale-110"
-                      : "bg-white/10"
-                  }`}
-                />
-              ))}
-            </div>
+          <div className="flex justify-between items-center pt-10 mt-10 border-t border-white/5 relative z-10">
+             <Button variant="ghost" size="md" className="text-error hover:bg-error/10 rounded-xl px-6" onClick={() => {
+               if(window.confirm(`Are you sure you want to remove ${selected.name}?`)) {
+                 deleteAgentAsync(selected.id).then(() => fetchAgents());
+               }
+             }}>
+                <Trash2 size={18} className="mr-2" /> Delete Agent
+             </Button>
+            {isEditing ? (
+              <Button variant="primary" size="md" className="shadow-neon-primary px-8 rounded-xl font-bold" onClick={saveChanges}>
+                <Save size={18} className="mr-2" /> Save Changes
+              </Button>
+            ) : (
+              <Button variant="secondary" size="md" className="bg-white/5 border border-white/10 text-white hover:bg-white/10 px-8 rounded-xl font-bold" onClick={startEditing}>
+                <Sliders size={18} className="mr-2" /> Edit Configuration
+              </Button>
+            )}
           </div>
         </GlassCard>
 
-        {/* Right Col: Tuning & Analytics */}
-        <div className="xl:col-span-7 flex flex-col sm:flex-row xl:flex-col gap-8">
-          {/* Tuning Module */}
-          <GlassCard className="flex-1 flex flex-col group hover:border-text-secondary/30 transition-colors">
-            <div className="flex justify-between items-center mb-10 border-b border-white/5 pb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-                  <Sliders size={20} className="text-primary group-hover:drop-shadow-[0_0_8px_rgba(207,255,4,0.6)] transition-all" />
+        {/* Right Col: Permissions & Performance */}
+        <div className="xl:col-span-7 flex flex-col gap-8">
+          {/* Tool Authorizations */}
+          <GlassCard className="flex-1 group hover:border-text-secondary/20 transition-all rounded-[2.5rem] p-10">
+            <div className="flex justify-between items-center mb-10 border-b border-white/5 pb-8">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-primary/10 rounded-2xl border border-primary/20">
+                  <ShieldCheck size={24} className="text-primary" />
                 </div>
-                <h4 className="text-tech text-white uppercase tracking-widest text-sm">
-                  Tuning_Module
-                </h4>
+                <div>
+                  <h4 className="text-lg font-bold text-white uppercase tracking-tight">Access Control</h4>
+                  <p className="text-[10px] font-tech text-text-secondary uppercase tracking-[0.2em] font-bold">Permissions & Assets</p>
+                </div>
               </div>
+              <Badge variant="success" className="rounded-full px-4">Authorized</Badge>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 flex-1">
-              <div className="space-y-4">
-                <label className="text-tech font-bold text-text-secondary uppercase mb-2 block">
-                  BASE_ARCHITECTURE
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="space-y-6">
+                <label className="text-[10px] font-tech font-bold text-text-secondary uppercase tracking-[0.3em] block">
+                  Integrated Tools
                 </label>
-                <div className="relative">
-                  <select className="w-full bg-[#050508] border border-border-glow p-4 rounded-xl text-tech text-white focus:border-primary outline-none appearance-none cursor-pointer focus:shadow-[0_0_15px_rgba(207,255,4,0.15)] transition-all">
-                    <option>Sinux_Core_v4 (GPT-4)</option>
-                    <option>Sinux_Light (Claude 3)</option>
-                    <option>Neural_Dive (Llama 3)</option>
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-text-secondary">
-                    ▼
-                  </div>
+                <div className="flex flex-wrap gap-3">
+                  {['Slack', 'Discord', 'GitHub', 'Email', 'Stripe'].map(tool => (
+                    <button 
+                      key={tool}
+                      className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all border ${selected.activeTools?.includes(tool) ? 'bg-primary/20 border-primary text-primary shadow-neon-primary' : 'bg-white/5 border-white/10 text-text-secondary hover:border-white/30'}`}
+                    >
+                      {tool}
+                    </button>
+                  ))}
+                  <button className="px-5 py-2.5 rounded-xl text-xs font-bold border border-dashed border-white/20 text-white/30 hover:border-primary hover:text-primary transition-all">
+                    + Add More
+                  </button>
                 </div>
               </div>
-              <div className="space-y-4">
-                <label className="text-tech font-bold text-text-secondary uppercase mb-2 block">
-                  OUTPUT_TONE
+
+              <div className="space-y-6">
+                <label className="text-[10px] font-tech font-bold text-text-secondary uppercase tracking-[0.3em] block">
+                  Contextual Access
                 </label>
-                <div className="flex bg-[#050508] p-1.5 rounded-xl border border-border-glow">
-                  <Button variant="primary" size="sm" className="flex-1 rounded-lg">
-                    Professional
-                  </Button>
-                  <Button variant="ghost" size="sm" className="flex-1 rounded-lg">
-                    Creative
-                  </Button>
+                <div className="space-y-3">
+                   <div className="flex items-center justify-between p-4 bg-white/[0.03] rounded-2xl border border-white/5 group-hover:border-white/10 transition-all">
+                      <div className="flex items-center gap-3">
+                         <div className="p-2 bg-accent/10 rounded-lg"><Database size={16} className="text-accent" /></div>
+                         <span className="text-xs font-bold text-white/80">Company Wiki</span>
+                      </div>
+                      <Badge variant="info" className="text-[9px] uppercase tracking-tighter">Read Only</Badge>
+                   </div>
+                   <div className="flex items-center justify-between p-4 bg-white/[0.03] rounded-2xl border border-white/5 opacity-40">
+                      <div className="flex items-center gap-3">
+                         <div className="p-2 bg-white/10 rounded-lg"><Database size={16} className="text-white/40" /></div>
+                         <span className="text-xs font-bold text-white/40">Financial Records</span>
+                      </div>
+                      <LockIcon size={14} className="text-white/20" />
+                   </div>
                 </div>
               </div>
-            </div>
-            <div className="mt-10 pt-6 border-t border-white/5 flex justify-end">
-              <Button variant="secondary">Sync Configuration</Button>
             </div>
           </GlassCard>
 
-          {/* Analytics Module */}
-          <GlassCard className="flex-1 sm:max-w-xs xl:max-w-none hover:border-text-secondary/30 transition-colors cursor-pointer group">
-            <div className="flex items-center gap-3 mb-8">
-               <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-                <Activity size={20} className="text-secondary group-hover:drop-shadow-[0_0_8px_rgba(255,0,85,0.6)] transition-all" />
+          {/* Performance & Status */}
+          <GlassCard className="flex-1 hover:border-text-secondary/20 transition-all rounded-[2.5rem] p-10">
+            <div className="flex items-center gap-4 mb-10">
+               <div className="p-4 bg-secondary/10 rounded-2xl border border-secondary/20">
+                <Activity size={24} className="text-secondary" />
               </div>
-              <h4 className="text-tech text-white tracking-widest text-sm uppercase">
-                Operational_Analytics
-              </h4>
+              <div>
+                <h4 className="text-lg font-bold text-white tracking-tight uppercase">Inference Status</h4>
+                <p className="text-[10px] font-tech text-text-secondary uppercase tracking-[0.2em] font-bold">Real-time Metrics</p>
+              </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-1 xl:grid-cols-3 gap-4 xl:gap-6">
-              <MetricBox label="Tokens" value="12.4K" highlightClass="text-white" />
-              <MetricBox label="Latency" value="140ms" highlightClass="text-white" />
-              <MetricBox label="Cost" value="$0.42" highlightClass="text-secondary drop-shadow-[0_0_8px_rgba(255,0,85,0.6)]" />
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+               <div className="p-6 bg-white/[0.03] rounded-2xl border border-white/5 space-y-4">
+                  <span className="text-[10px] font-tech text-text-secondary uppercase font-bold tracking-widest">Memory Context</span>
+                  <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-secondary shadow-neon-pink animate-pulse" />
+                      <span className="text-sm font-bold text-white">128K Tokens</span>
+                  </div>
+                  <p className="text-[9px] font-tech text-white/30 uppercase leading-none">Standard Window Size</p>
+               </div>
+               <div className="p-6 bg-white/[0.03] rounded-2xl border border-white/5 space-y-4">
+                  <span className="text-[10px] font-tech text-text-secondary uppercase font-bold tracking-widest">Processing Speed</span>
+                  <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-accent shadow-neon-accent animate-pulse" />
+                      <span className="text-sm font-bold text-white">High Priority</span>
+                  </div>
+                   <p className="text-[9px] font-tech text-white/30 uppercase leading-none">Low Latency Enabled</p>
+               </div>
+               <div className="p-6 bg-white/[0.03] rounded-2xl border border-white/5 space-y-4">
+                  <span className="text-[10px] font-tech text-text-secondary uppercase font-bold tracking-widest">Network Link</span>
+                  <div className="flex items-center gap-3">
+                     <div className="w-2 h-2 rounded-full bg-success shadow-neon-success animate-pulse" />
+                     <span className="text-sm font-bold text-success uppercase">Active</span>
+                  </div>
+                  <p className="text-[9px] font-tech text-white/30 uppercase leading-none">Latency: ~240ms</p>
+               </div>
             </div>
           </GlassCard>
         </div>
@@ -239,39 +363,21 @@ function Agents() {
   );
 }
 
-// Styled Segmented Progress Bar
-function NFSStatBar({ label, value, colorClass }) {
-  return (
-    <div className="space-y-3">
-      <div className="flex justify-between text-tech font-bold tracking-widest uppercase">
-        <span className="text-text-secondary">{label}</span>
-        <span className="text-white">{value} / 100</span>
-      </div>
-      <div className="flex gap-1.5 h-3">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className={`flex-1 rounded-sm transition-colors duration-1000 ${
-              i < value / 5 ? colorClass : "bg-white/5"
-            }`}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MetricBox({ label, value, highlightClass }) {
-  return (
-    <div className="flex flex-col xl:items-center justify-center p-5 bg-[#050508]/50 rounded-2xl border border-border-glow hover:border-white/20 transition-colors">
-      <p className="text-tech text-text-secondary font-bold uppercase mb-2">
-        {label}
-      </p>
-      <p className={`text-3xl text-insane italic ${highlightClass}`}>
-        {value}
-      </p>
-    </div>
-  );
-}
+const LockIcon = ({ size, className }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
 
 export default Agents;

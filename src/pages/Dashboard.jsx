@@ -1,301 +1,118 @@
-import React, { useState } from "react";
-import {
-  LayoutDashboard,
-  Bot,
-  Cpu,
-  Settings,
-  Plus,
-  Activity,
-  Zap,
-  Sliders,
-  ChevronRight,
-  MonitorPlay,
-} from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { LayoutDashboard, Bot, Zap, Activity, Plus, MonitorPlay, ChevronRight, Wallet } from "lucide-react";
 import { GlassCard } from "../components/ui/GlassCard";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
+import { useAuthStore } from "../authentication/authStore";
+import { getAgentsAsync } from "../services/agentService";
+import { getUsageAnalyticsAsync, getBalanceAsync } from "../services/walletService";
 
 function Dashboard() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const { organizationId } = useAuthStore();
+  const [agents, setAgents] = useState([]);
+  const [balance, setBalance] = useState(0);
+  const [usage, setUsage] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // --- MOCK DATA (Semi-Dynamic) ---
-  const [agents] = useState([
-    {
-      id: 1,
-      name: "Alpha-7",
-      status: "Working",
-      task: "Refactoring API Auth logic",
-      efficiency: "94%",
-    },
-    {
-      id: 2,
-      name: "Beta-Docs",
-      status: "Idle",
-      task: "Awaiting next pipeline...",
-      efficiency: "88%",
-    },
-    {
-      id: 3,
-      name: "Gamma-Scraper",
-      status: "Working",
-      task: "Analyzing competitor LLM pricing",
-      efficiency: "99%",
-    },
-  ]);
+  useEffect(() => {
+    if (organizationId) fetchData();
+  }, [organizationId]);
 
-  const [models] = useState([
-    {
-      id: "gpt-4",
-      name: "Sinux-Ultra",
-      subName: "GPT-4 Engine",
-      temp: 0.7,
-      tokens: 2048,
-      active: true,
-    },
-    {
-      id: "claude-3",
-      name: "Sinux-Fast",
-      subName: "Claude 3 Engine",
-      temp: 0.5,
-      tokens: 4096,
-      active: false,
-    },
-    {
-      id: "llama-3",
-      name: "Sinux-Local",
-      subName: "Llama 3 Local",
-      temp: 0.9,
-      tokens: 1024,
-      active: false,
-    },
-  ]);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [agentData, walletData, usageData] = await Promise.all([
+        getAgentsAsync(organizationId),
+        getBalanceAsync(organizationId),
+        getUsageAnalyticsAsync(organizationId)
+      ]);
+      setAgents(agentData || []);
+      setBalance(walletData?.balance || 0);
+      setUsage(usageData || []);
+    } catch (err) {
+      console.error("Dashboard sync failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalSpend = usage.reduce((sum, r) => sum + (r.billedCostUsd || 0), 0);
 
   return (
-    <div className="flex flex-col md:flex-row min-h-[calc(100vh-140px)] md:h-[calc(100vh-140px)] w-full max-w-[1500px] mx-auto z-10 relative">
-      <div className="absolute top-[20%] left-[10%] w-[30%] h-[30%] bg-white/5 blur-[120px] rounded-full pointer-events-none" />
+    <div className="p-8 max-w-[1200px] mx-auto animate-in fade-in duration-500">
+      <PageHeader 
+        title="Organization Overview" 
+        subtitle="Operational status and resource consumption metrics."
+        action={
+          <Button variant="primary" onClick={() => window.location.href='/agents'}>
+            Deploy Agent <Plus size={16} className="ml-2" />
+          </Button>
+        }
+      />
 
-      {/* --- SIDEBAR --- */}
-      <aside className="w-full md:w-72 flex-shrink-0 flex flex-col p-4 md:p-6 mb-4 md:mb-0">
-        <GlassCard className="flex-1 flex flex-col p-6 sticky top-6">
-          <div className="space-y-3 flex-1">
-            <p className="text-tech text-text-secondary mb-6 pl-2">
-              CONSOLE_ROOT
-            </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <StatCard label="Active Agents" value={agents.length} icon={<Bot className="text-primary" />} />
+        <StatCard label="Monthly Spend" value={`R${totalSpend.toFixed(2)}`} icon={<Zap className="text-secondary" />} />
+        <StatCard label="Credit Balance" value={`R${balance.toFixed(2)}`} icon={<Wallet className="text-accent" />} />
+      </div>
 
-            {[
-              { id: "overview", label: "Overview", icon: <LayoutDashboard size={18} /> },
-              { id: "agents", label: "Active Agents", icon: <Bot size={18} /> },
-              { id: "models", label: "Model Tuning", icon: <Cpu size={18} /> },
-            ].map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all duration-300 font-tech font-bold text-xs uppercase tracking-widest ${
-                  activeTab === item.id
-                    ? "bg-primary text-black shadow-neon-primary scale-105"
-                    : "text-text-secondary hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                {item.icon} {item.label}
-              </button>
-            ))}
-
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Real Agent Status */}
+        <GlassCard className="lg:col-span-8 p-8">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
+              <MonitorPlay size={18} className="text-primary" /> Active Workforce
+            </h3>
+            <Badge variant="ghost">{agents.length} Total Nodes</Badge>
           </div>
-
-          <div className="pt-6 border-t border-border-glow mt-auto">
-            <button className="flex items-center gap-4 px-3 py-3 text-text-secondary hover:text-white transition-colors font-tech uppercase text-[10px] tracking-widest w-full justify-start">
-              <Settings size={16} /> Preferences
-            </button>
+          
+          <div className="space-y-3">
+            {loading ? (
+              <div className="py-10 text-center text-text-secondary text-xs animate-pulse">Syncing agent states...</div>
+            ) : agents.length === 0 ? (
+              <div className="py-10 text-center text-text-secondary text-xs">No active agents found in this organization.</div>
+            ) : (
+              agents.map((agent) => (
+                <div key={agent.agentProfileId} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:border-white/10 transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                    <div>
+                      <p className="text-xs font-bold text-white uppercase">{agent.name}</p>
+                      <p className="text-[10px] text-text-secondary uppercase">{agent.role}</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-8 text-[10px] uppercase font-bold">Details</Button>
+                </div>
+              ))
+            )}
           </div>
         </GlassCard>
-      </aside>
 
-      {/* --- MAIN CONTENT AREA --- */}
-      <main className="flex-1 p-4 md:p-6">
-        <div className="max-w-[1000px]">
-          <PageHeader 
-            title={activeTab} 
-            subtitle="Platform Control & Resource Management Module."
-            action={
-              <Button variant="primary" className="shadow-neon-primary">
-                New Deployment <Plus size={16} />
-              </Button>
-            }
-          />
-
-          {/* View: OVERVIEW */}
-          {activeTab === "overview" && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard
-                  label="Fleet Size"
-                  value="03"
-                  icon={<Bot className="text-primary drop-shadow-[0_0_8px_rgba(207,255,4,0.8)]" size={24} />}
-                />
-                <StatCard
-                  label="Tokens Spent"
-                  value="1.2M"
-                  icon={<Zap className="text-secondary drop-shadow-[0_0_8px_rgba(255,0,85,0.8)]" size={24} />}
-                />
-                <StatCard
-                  label="Core Uptime"
-                  value="99.9%"
-                  icon={<Activity className="text-accent drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]" size={24} />}
-                />
+        {/* Quick System Health */}
+        <div className="lg:col-span-4 space-y-6">
+           <GlassCard className="p-6 border-primary/20 bg-primary/5">
+              <div className="flex items-center gap-2 mb-4">
+                <Activity size={16} className="text-primary" />
+                <h4 className="text-[10px] font-bold text-white uppercase tracking-widest">Inference Health</h4>
               </div>
-
-              <GlassCard interactive className="p-8">
-                <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
-                  <h3 className="text-xl text-insane text-white flex items-center gap-3">
-                    <MonitorPlay size={24} className="text-primary" /> Live Intelligence
-                  </h3>
-                  <Badge variant="success" className="animate-pulse">STREAMING</Badge>
-                </div>
-                
-                <div className="space-y-5 font-tech text-xs tracking-wider">
-                  {agents
-                    .filter((a) => a.status === "Working")
-                    .map((a) => (
-                      <div
-                        key={a.id}
-                        className="flex flex-col md:flex-row md:items-center justify-between p-5 bg-black/40 rounded-xl border border-white/5 hover:border-white/10 transition-colors"
-                      >
-                        <div className="flex items-center gap-4 mb-3 md:mb-0">
-                          <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-neon-primary" />
-                          <span className="text-white font-bold">
-                            [{a.name}]
-                          </span>
-                          <span className="text-text-secondary hidden sm:inline">
-                            // {a.task}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-text-secondary sm:hidden truncate max-w-[150px]">
-                            {a.task}
-                          </span>
-                          <span className="text-primary bg-primary/10 px-3 py-1 rounded shadow-glass-inner">
-                            {a.efficiency} LOAD
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </GlassCard>
-            </div>
-          )}
-
-          {/* View: AGENTS */}
-          {activeTab === "agents" && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in slide-in-from-bottom-8 duration-700">
-              {agents.map((agent) => (
-                <GlassCard key={agent.id} interactive className="p-8 group flex flex-col justify-between h-full bg-gradient-to-br from-white/5 to-transparent">
-                  <div>
-                    <div className="flex justify-between items-start mb-8">
-                      <div className="p-4 bg-black/50 rounded-2xl group-hover:scale-110 transition-transform shadow-glass-inner border border-white/5">
-                        <Bot size={28} className={agent.status === "Working" ? "text-primary drop-shadow-[0_0_8px_rgba(207,255,4,0.6)]" : "text-text-secondary"} />
-                      </div>
-                      <Badge variant={agent.status === "Working" ? "success" : "neutral"}>
-                        {agent.status}
-                      </Badge>
-                    </div>
-                    <h4 className="text-3xl text-insane text-white mb-2 group-hover:text-primary transition-colors">
-                      {agent.name}
-                    </h4>
-                    <p className="text-text-secondary font-sans text-sm h-10 mb-8 mt-4 leading-relaxed line-clamp-2">
-                      {agent.task}
-                    </p>
-                  </div>
-                  <Button variant="secondary" className="w-full">
-                    Inspect Node <ChevronRight size={16} />
-                  </Button>
-                </GlassCard>
-              ))}
-            </div>
-          )}
-
-          {/* View: MODELS */}
-          {activeTab === "models" && (
-            <div className="space-y-8 animate-in slide-in-from-bottom-8 duration-700">
-              {models.map((model) => (
-                <GlassCard key={model.id} interactive className="p-10 flex flex-col xl:flex-row gap-10 items-center justify-between overflow-hidden">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/5 blur-[80px] rounded-full pointer-events-none group-hover:bg-secondary/10 transition-colors" />
-                  
-                  <div className="flex-1 w-full relative z-10">
-                    <div className="flex items-center gap-4 mb-3">
-                      <h4 className="text-4xl text-insane text-white tracking-tighter">
-                        {model.name}
-                      </h4>
-                      {model.active && (
-                        <Badge variant="info">ACTIVE_ROUTE</Badge>
-                      )}
-                    </div>
-                    <p className="text-text-secondary font-tech uppercase tracking-widest text-xs mb-4">
-                      {model.subName}
-                    </p>
-                    <p className="text-text-secondary/70 font-sans text-sm max-w-sm">
-                      Optimized parameter set for complex synthesis and latency requirements.
-                    </p>
-                  </div>
-
-                  <div className="w-full xl:w-auto flex flex-col sm:flex-row gap-8 items-center border-t xl:border-t-0 xl:border-l border-white/10 pt-8 xl:pt-0 xl:pl-10 relative z-10">
-                    <div className="space-y-5 w-full sm:min-w-[180px]">
-                      <div className="flex justify-between font-tech text-xs font-bold uppercase tracking-widest text-text-secondary">
-                        <span>Temperature</span>
-                        <span className="text-primary">{model.temp}</span>
-                      </div>
-                      <input
-                        type="range"
-                        className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        defaultValue={model.temp}
-                      />
-                    </div>
-                    
-                    <div className="space-y-5 w-full sm:min-w-[180px]">
-                      <div className="flex justify-between font-tech text-xs font-bold uppercase tracking-widest text-text-secondary">
-                        <span>Max Tokens</span>
-                        <span className="text-accent">{model.tokens}</span>
-                      </div>
-                      <input
-                        type="range"
-                        className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-accent"
-                        min="512"
-                        max="8192"
-                        step="512"
-                        defaultValue={model.tokens}
-                      />
-                    </div>
-                    
-                    <Button variant="ghost" className="p-4 rounded-xl shrink-0 mt-4 sm:mt-0 hover:bg-white/10 hover:text-white border border-white/5">
-                      <Sliders size={20} />
-                    </Button>
-                  </div>
-                </GlassCard>
-              ))}
-            </div>
-          )}
+              <p className="text-2xl font-bold text-white">99.9%</p>
+              <p className="text-[10px] text-text-secondary mt-1">Uptime across all model routes</p>
+           </GlassCard>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
 
-// Sub-component for Stats
 function StatCard({ label, value, icon }) {
   return (
-    <GlassCard interactive className="p-8 flex flex-col justify-between">
-      <div className="flex justify-between items-start mb-6">
-        <span className="font-tech text-xs font-bold text-text-secondary uppercase tracking-widest shadow-none">
-          {label}
-        </span>
-        {icon}
+    <GlassCard className="p-6 flex flex-col justify-between hover:border-white/10 transition-all">
+      <div className="flex justify-between items-start mb-4">
+        <span className="text-[10px] font-bold text-text-secondary uppercase tracking-[0.2em]">{label}</span>
+        <div className="p-2 bg-white/5 rounded-lg">{icon}</div>
       </div>
-      <div className="text-5xl lg:text-6xl text-insane text-white drop-shadow-xl">
-        {value}
-      </div>
+      <div className="text-3xl font-bold text-white tracking-tight">{value}</div>
     </GlassCard>
   );
 }

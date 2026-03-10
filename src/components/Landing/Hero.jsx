@@ -17,26 +17,27 @@ export const Hero = () => {
           <h1 className="text-5xl md:text-6xl lg:text-[5.5rem] font-sans font-semibold tracking-tighter mb-8 leading-[1.05] text-white">
             Build, tune
             <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/80 to-primary/60">& deploy AI agents.</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/80 to-primary/60">& deploy AI agents for Enterprise.</span>
           </h1>
           <p className="max-w-xl text-text-secondary text-lg md:text-xl leading-relaxed font-sans">
-            Sinux gives teams and developers a single platform to create
-            custom AI agents, connect any API, and deploy across REST,
-            Discord, Slack, or your own product — in minutes.
+            Sinux is the definitive operating system for autonomous AI agents. 
+            Automate complex workflows, integrate your entire tech stack, and 
+            deploy specialized workforce agents — in one secure platform.
           </p>
 
           <div className="flex flex-wrap gap-4 mt-10">
             <Link to="/auth">
               <Button variant="primary" size="lg" className="rounded-full shadow-neon-primary hover:scale-[1.02]">
-                Start Building — Free <ArrowRight size={18} className="ml-2" />
+                Scale Your Enterprise <ArrowRight size={18} className="ml-2" />
               </Button>
             </Link>
-            <Link to="/chat">
+            <Link to="#services">
               <Button variant="ghost" size="lg" className="rounded-full border border-white/10 hover:border-primary/40">
-                Try Live Console
+                Explore Solutions
               </Button>
             </Link>
           </div>
+
         </div>
 
         {/* Right side: quick value props */}

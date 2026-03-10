@@ -2,28 +2,23 @@
 This will be related to basic chatbot functionality and interacting with anthing involving the chatbot
 */
 
+import { generatePath } from "react-router";
 import { useAuthStore } from "../authentication/authStore";
 import { sinuxApi } from "./api.config";
 import { LoginAsync } from "./authService";
 
 // need to make models / dtos
-export let GenAIChatAsync = async ({ prompt, model }) => {
-  // THIS IS FOR NOW ******************************************
-
+export const GenAIChatAsync = async ({ prompt, model, chatLogId }) => {
   try {
-    const { email, displayName } = useAuthStore.getState();
-
-    const response = await sinuxApi.get("/Prompts/generate", {
-      params: { prompt, model },
+    const response = await sinuxApi.post("/Prompts/generate", {
+      prompt,
+      model: parseInt(model),
+      chatLogId
     });
-
-    console.log(response.data.message);
-    return response.data.message;
+    return response.data;
   } catch (error) {
-    return (
-      error.response?.data?.message ||
-      error.message ||
-      "An unknown error occurred"
-    );
+    const message = error.response?.data?.message || error.message || "Uplink failure.";
+    throw new Error(message);
   }
 };
+

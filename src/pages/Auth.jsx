@@ -1,11 +1,14 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, ArrowRight, Zap, Github } from "lucide-react";
 import { LoginAsync, RegisterAsync, OAuthLogin } from "../services/authService";
 import { Button } from "../components/ui/Button";
+import { useState } from "react";
 
 function Auth() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnUrl = searchParams.get("returnUrl") || "/chat";
+  
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -22,7 +25,7 @@ function Auth() {
     try {
       if (isLogin) {
         await LoginAsync(formData.email, formData.password);
-        navigate("/chat");
+        navigate(returnUrl);
       } else {
         const res = await RegisterAsync(
           formData.email,
