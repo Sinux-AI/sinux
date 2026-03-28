@@ -1,239 +1,250 @@
-import React, { useState } from "react";
-import { 
-  Database, 
-  Upload, 
-  FileText, 
-  Search, 
-  Trash2, 
-  ShieldCheck, 
-  Cpu, 
-  Link as LinkIcon,
-  CheckCircle2,
-  AlertCircle,
-  Pin,
-  Bot
-} from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useAuthStore } from "../authentication/authStore";
+import { getDocumentsAsync, uploadDocumentAsync } from "../services/knowledgeService.js";
+import { SOURCE_TYPES } from "../constants/integrations.js";
 import { GlassCard } from "../components/ui/GlassCard";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
+import {
+  Database, Upload, FileText, Link as LinkIcon, Trash2,
+  ShieldCheck, CheckCircle2, Clock, AlertCircle, RefreshCw,
+  Youtube, ExternalLink
+} from "lucide-react";
 import { toast } from "react-hot-toast";
 
-const Knowledge = () => {
-  const [activeTab, setActiveTab] = useState("documents");
-  const [isUploading, setIsUploading] = useState(false);
-  
-  const [documents, setDocuments] = useState([
-    { id: "doc_1", name: "Enterprise_ComplianceV2.pdf", size: "2.4 MB", status: "Indexed", tokens: "128,400", lastSync: "2h ago" },
-    { id: "doc_2", name: "Technical_Blueprint_Sinux.md", size: "45 KB", status: "Vectorizing", tokens: "5,200", lastSync: "Just now" },
-    { id: "doc_3", name: "API_Documentation_Standard.json", size: "120 KB", status: "Indexed", tokens: "18,900", lastSync: "1d ago" },
-  ]);
+const STATUS_CONFIG = {
+  Pending:     { variant: "warning", label: "Pending",     icon: Clock,         pulse: false },
+  In_Progress: { variant: "info",    label: "Processing",  icon: RefreshCw,     pulse: true  },
+  Ready:       { variant: "success", label: "Ready",       icon: CheckCircle2,  pulse: false },
+  Failed:      { variant: "error",   label: "Failed",      icon: AlertCircle,   pulse: false },
+};
 
-  const [agentPins, setAgentPins] = useState([
-    { id: "pin_1", agent: "Atlas", role: "Primary Researcher", docs: 3 },
-    { id: "pin_2", agent: "Nexus", role: "Logic Analyst", docs: 1 },
-    { id: "pin_3", agent: "Sentinel", role: "Security Guardian", docs: 2 },
-  ]);
+const SOURCE_ICONS = {
+  LocalFile: FileText,
+  Url:       LinkIcon,
+  YouTube:   Youtube,
+  Notion:    ExternalLink,
+  Slack:     Database,
+};
 
-  const handleUploadClick = () => {
-    setIsUploading(true);
-    setTimeout(() => {
-      setIsUploading(false);
-      toast.success("Document ingested and queued for vectorization.");
-    }, 2000);
+function UploadPanel({ organizationId, onUploaded }) {
+  const fileInput = useRef(null);
+  const [sourceType, setSourceType] = useState("LocalFile");
+  const [url, setUrl] = useState("");
+  const [file, setFile] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const needsFile = ["LocalFile"].includes(sourceType);
+  const canSubmit = needsFile ? !!file : !!url.trim();
+
+  const handleDrop = (e) => {
+    e.preventDefault(); setDragging(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) setFile(f);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setUploading(true);
+      const fd = new FormData();
+      fd.append("sourceType", sourceType);
+      if (needsFile) fd.append("file", file);
+      else { fd.append("sourceType", sourceType); fd.append("file", new Blob([url], { type: "text/plain" }), "url.txt"); }
+      await uploadDocumentAsync(fd);
+      toast.success("Document queued for processing.");
+      setFile(null); setUrl("");
+      onUploaded();
+    } catch { toast.error("Upload failed."); }
+    finally { setUploading(false); }
   };
 
   return (
-    <div className="bg-background pb-32 relative isolate max-w-[1400px] mx-auto px-4 sm:px-8 w-full animate-in fade-in duration-1000">
-      {/* Background Orbs */}
+    <GlassCard className="p-8 rounded-[2rem] border-white/5 mb-6">
+      <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+        <Upload size={16} className="text-primary" /> Ingest New Source
+      </h3>
+
+      {/* Source type */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {SOURCE_TYPES.map(s => (
+          <button key={s.value} onClick={() => setSourceType(s.value)}
+            className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all ${sourceType === s.value ? 'bg-primary/20 border-primary text-primary' : 'border-white/10 text-text-secondary hover:border-white/20'}`}>
+            {s.value.replace(/([A-Z])/g, ' $1').trim()}
+          </button>
+        ))}
+      </div>
+
+      {/* Drop zone or URL input */}
+      {needsFile ? (
+        <div
+          onDragOver={e => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => fileInput.current?.click()}
+          className={`h-36 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all mb-4 ${dragging ? 'border-primary bg-primary/5' : file ? 'border-primary/40 bg-primary/5' : 'border-white/10 hover:border-white/20 bg-white/[0.02]'}`}
+        >
+          <input ref={fileInput} type="file" className="hidden" accept=".pdf,.txt,.md,.docx"
+            onChange={e => setFile(e.target.files?.[0] || null)} />
+          <Upload size={24} className={`mb-2 ${file ? 'text-primary' : 'text-white/20'}`} />
+          <p className="text-[11px] font-tech uppercase tracking-widest text-text-secondary">
+            {file ? file.name : "Drop PDF, TXT, MD, DOCX or click to browse"}
+          </p>
+        </div>
+      ) : (
+        <input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..."
+          className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-primary transition-all mb-4" />
+      )}
+
+      <Button variant="primary" className="w-full rounded-xl shadow-neon-primary" disabled={!canSubmit || uploading} onClick={handleSubmit}>
+        {uploading ? "Processing..." : "Ingest Source"}
+      </Button>
+    </GlassCard>
+  );
+}
+
+function DocumentRow({ doc }) {
+  const cfg = STATUS_CONFIG[doc.status] || STATUS_CONFIG.Pending;
+  const Icon = SOURCE_ICONS[doc.sourceType] || FileText;
+  const StatusIcon = cfg.icon;
+
+  return (
+    <div className="flex items-center justify-between p-5 bg-white/[0.02] rounded-2xl border border-white/5 hover:border-white/10 transition-all group">
+      <div className="flex items-center gap-4">
+        <div className="p-3 bg-white/5 rounded-xl group-hover:bg-primary/10 transition-colors shrink-0">
+          <Icon size={18} className="text-text-secondary group-hover:text-primary transition-colors" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-white">{doc.fileName || doc.knowledgeDocumentId}</p>
+          <div className="flex items-center gap-3 mt-1">
+            <span className="text-[9px] font-tech text-text-secondary uppercase">{doc.sourceType}</span>
+            {doc.totalChunks > 0 && (
+              <span className="text-[9px] font-tech text-text-secondary uppercase">{doc.totalChunks.toLocaleString()} chunks</span>
+            )}
+            <span className="text-[9px] text-text-secondary">{new Date(doc.createdAt).toLocaleDateString()}</span>
+          </div>
+        </div>
+      </div>
+      <Badge variant={cfg.variant} className={`flex items-center gap-1.5 ${cfg.pulse ? 'animate-pulse' : ''}`}>
+        <StatusIcon size={10} />
+        {cfg.label}
+      </Badge>
+    </div>
+  );
+}
+
+const Knowledge = () => {
+  const { organizationId } = useAuthStore();
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const pollRef = useRef(null);
+
+  const fetchDocuments = useCallback(async () => {
+    try {
+      const data = await getDocumentsAsync(organizationId);
+      setDocuments(data || []);
+      // Poll while any doc is still processing
+      const processing = (data || []).some(d => d.status === "Pending" || d.status === "In_Progress");
+      if (processing && !pollRef.current) {
+        pollRef.current = setInterval(async () => {
+          const fresh = await getDocumentsAsync(organizationId).catch(() => null);
+          if (fresh) {
+            setDocuments(fresh);
+            if (!fresh.some(d => d.status === "Pending" || d.status === "In_Progress")) {
+              clearInterval(pollRef.current); pollRef.current = null;
+            }
+          }
+        }, 5000);
+      }
+    } catch { toast.error("Failed to load knowledge base."); }
+    finally { setLoading(false); }
+  }, [organizationId]);
+
+  useEffect(() => { fetchDocuments(); return () => { if (pollRef.current) clearInterval(pollRef.current); }; }, [fetchDocuments]);
+
+  const readyCount = documents.filter(d => d.status === "Ready").length;
+  const processingCount = documents.filter(d => d.status === "Pending" || d.status === "In_Progress").length;
+
+  return (
+    <div className="bg-background pb-20 relative isolate max-w-[1400px] mx-auto px-4 sm:px-8 w-full animate-in fade-in duration-700">
       <div className="absolute top-[15%] -left-[5%] w-[500px] h-[500px] bg-primary/5 blur-[150px] rounded-full pointer-events-none -z-10" />
       <div className="absolute bottom-[20%] -right-[5%] w-[600px] h-[600px] bg-secondary/5 blur-[150px] rounded-full pointer-events-none -z-10" />
 
-      <PageHeader 
-        title="Knowledge Assets" 
-        subtitle="The long-term memory of your organization. Upload documents to the Sinux Vector Store and pin them to specialized workforce nodes." 
+      <PageHeader
+        title="Knowledge Base"
+        subtitle="Ground your agents in real-world context. Upload documents, websites, and videos to the RAG vector store."
       />
 
-      <div className="flex gap-8 mb-12 border-b border-white/5 pb-0">
-        <button 
-          onClick={() => setActiveTab("documents")}
-          className={`pb-4 text-tech font-bold tracking-widest uppercase text-xs transition-all relative ${activeTab === 'documents' ? 'text-primary' : 'text-text-secondary hover:text-white'}`}
-        >
-          // VECTOR_STORE
-          {activeTab === 'documents' && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary shadow-neon-primary" />}
-        </button>
-        <button 
-          onClick={() => setActiveTab("pinning")}
-          className={`pb-4 text-tech font-bold tracking-widest uppercase text-xs transition-all relative ${activeTab === 'pinning' ? 'text-secondary' : 'text-text-secondary hover:text-white'}`}
-        >
-          // CONTEXT_PINNING
-          {activeTab === 'pinning' && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-secondary shadow-neon-pink" />}
-        </button>
-      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+        {/* Left: Upload + List */}
+        <div className="xl:col-span-8">
+          <UploadPanel organizationId={organizationId} onUploaded={fetchDocuments} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Main Content Area */}
-        <div className="lg:col-span-8">
-          {activeTab === 'documents' ? (
-            <div className="space-y-6">
-              {/* Upload Zone */}
-              <div 
-                className="group relative h-48 rounded-[2rem] border-2 border-dashed border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-primary/50 flex flex-col items-center justify-center transition-all cursor-pointer overflow-hidden"
-                onClick={handleUploadClick}
-              >
-                {isUploading ? (
-                  <div className="flex flex-col items-center gap-4">
-                    <Activity size={32} className="text-primary animate-pulse" />
-                    <p className="text-tech text-xs tracking-[0.2em] text-white uppercase animate-pulse">Analyzing Document Layers...</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="p-4 bg-black/40 rounded-2xl mb-4 group-hover:scale-110 group-hover:shadow-neon-primary transition-all duration-500">
-                      <Upload size={24} className="text-primary" />
-                    </div>
-                    <p className="text-tech text-xs tracking-[0.2em] text-text-secondary uppercase">
-                      Drop PDFs, Markdown or Text to Ingest
-                    </p>
-                  </>
-                )}
-                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
-              </div>
+          {/* Stats strip */}
+          <div className="flex items-center gap-4 mb-6">
+            <span className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">
+              {loading ? "Loading..." : `${documents.length} documents — ${readyCount} ready`}
+            </span>
+            {processingCount > 0 && (
+              <Badge variant="info" className="animate-pulse">{processingCount} processing</Badge>
+            )}
+            <button onClick={fetchDocuments} className="ml-auto p-2 rounded-xl hover:bg-white/5 text-text-secondary hover:text-white transition-all">
+              <RefreshCw size={14} />
+            </button>
+          </div>
 
-              {/* SearchBar */}
-              <div className="relative">
-                <Search size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-text-secondary" />
-                <input 
-                  type="text" 
-                  placeholder="SEARCH_VECTOR_INDEX..."
-                  className="w-full bg-black/50 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-tech text-xs tracking-widest focus:border-primary outline-none transition-all"
-                />
-              </div>
-
-              {/* Documents List */}
-              <div className="grid gap-4">
-                {documents.map(doc => (
-                  <GlassCard key={doc.id} className="p-6 flex items-center justify-between group hover:border-white/20 transition-all border-white/5">
-                    <div className="flex items-center gap-6">
-                      <div className="p-4 bg-white/5 rounded-2xl group-hover:bg-primary/10 transition-colors">
-                        <FileText size={24} className="text-primary group-hover:glow-text-primary" />
-                      </div>
-                      <div>
-                        <h4 className="font-tech font-bold text-white mb-1 uppercase tracking-tight">{doc.name}</h4>
-                        <div className="flex items-center gap-4 text-[10px] text-text-secondary font-tech uppercase tracking-widest">
-                          <span>{doc.size}</span>
-                          <span className="w-1 h-1 bg-white/10 rounded-full" />
-                          <span>{doc.tokens} Tokens</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-8">
-                      <div className="text-right hidden md:block">
-                        <Badge variant={doc.status === 'Indexed' ? 'success' : 'info'} className="mb-1 uppercase tracking-tighter">
-                          {doc.status}
-                        </Badge>
-                        <p className="text-[9px] text-text-secondary/50 font-tech uppercase">Synced {doc.lastSync}</p>
-                      </div>
-                      <Button variant="ghost" size="sm" className="p-2 hover:bg-error/10 text-text-secondary hover:text-error">
-                        <Trash2 size={16} />
-                      </Button>
-                    </div>
-                  </GlassCard>
-                ))}
-              </div>
+          {loading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => <div key={i} className="h-20 rounded-2xl bg-white/[0.03] animate-pulse border border-white/5" />)}
+            </div>
+          ) : documents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
+              <Database size={40} className="mb-4" />
+              <p className="text-sm font-tech uppercase tracking-widest font-bold">No documents ingested yet</p>
+              <p className="text-xs text-text-secondary mt-2">Upload a PDF, paste a URL, or link a YouTube video.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 duration-500">
-              {agentPins.map(pin => (
-                <GlassCard key={pin.id} className="p-8 relative group overflow-hidden border-white/5 hover:border-secondary/40">
-                  <div className="absolute top-0 right-0 p-4">
-                     <Pin size={20} className="text-secondary opacity-20 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className="w-16 h-16 rounded-2xl bg-secondary/10 flex items-center justify-center border border-secondary/20 group-hover:shadow-neon-pink transition-all">
-                      <Bot size={32} className="text-secondary" />
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-tech font-bold text-white uppercase tracking-tight">{pin.agent}</h4>
-                      <p className="text-[10px] text-text-secondary font-tech uppercase tracking-widest">{pin.role}</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 mb-8">
-                    <p className="text-[10px] font-tech text-white/30 uppercase tracking-[0.2em] mb-4">// PINNED_RESOURCES: {pin.docs}</p>
-                    <div className="space-y-2">
-                       {documents.slice(0, pin.docs).map(doc => (
-                         <div key={doc.id} className="flex items-center justify-between p-2 px-3 bg-white/5 rounded-xl border border-white/5 text-[10px] font-tech tracking-widest">
-                           <span className="text-white/60 truncate max-w-[150px]">{doc.name}</span>
-                           <span className="text-secondary">ACTIVE</span>
-                         </div>
-                       ))}
-                    </div>
-                  </div>
-
-                  <Button variant="secondary" size="sm" className="w-full rounded-xl">
-                    Configure Context
-                  </Button>
-                </GlassCard>
-              ))}
+            <div className="space-y-3">
+              {documents.map(doc => <DocumentRow key={doc.knowledgeDocumentId} doc={doc} />)}
             </div>
           )}
         </div>
 
-        {/* Sidebar / Stats */}
-        <div className="lg:col-span-4 space-y-6">
+        {/* Right: Security sidebar */}
+        <div className="xl:col-span-4 space-y-6">
           <GlassCard className="p-8 border-primary/20 bg-primary/[0.02]">
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-3 mb-6">
               <ShieldCheck size={20} className="text-primary" />
-              <h4 className="text-xs font-tech font-bold text-white uppercase tracking-widest">Neural_Security</h4>
+              <h4 className="text-xs font-tech font-bold text-white uppercase tracking-widest">Vector Security</h4>
             </div>
-            
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-[10px] font-tech uppercase tracking-widest mb-1">
-                  <span className="text-text-secondary">Storage Capacity</span>
-                  <span className="text-white">65.2%</span>
+            <div className="space-y-4">
+              {[["AES-256 Encryption at Rest", true], ["Private Vector Cloud", true], ["Per-Org Namespace Isolation", true]].map(([label, ok]) => (
+                <div key={label} className="flex items-center gap-3">
+                  <div className={`p-1 rounded text-${ok ? 'success' : 'error'} bg-${ok ? 'success' : 'error'}/10`}>
+                    {ok ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                  </div>
+                  <span className="text-[10px] text-text-secondary uppercase tracking-tight">{label}</span>
                 </div>
-                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-primary w-[65%]" />
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t border-white/5">
-                <div className="flex items-start gap-3">
-                   <div className="p-1 bg-success/10 rounded text-success mt-0.5"><CheckCircle2 size={12} /></div>
-                   <p className="text-[10px] text-text-secondary uppercase tracking-tight leading-normal">
-                     AES-256 Encryption at Rest
-                   </p>
-                </div>
-                <div className="flex items-start gap-3">
-                   <div className="p-1 bg-primary/10 rounded text-primary mt-0.5"><CheckCircle2 size={12} /></div>
-                   <p className="text-[10px] text-text-secondary uppercase tracking-tight leading-normal">
-                     Private Vector Cloud Verified
-                   </p>
-                </div>
-              </div>
+              ))}
             </div>
           </GlassCard>
 
-          <GlassCard className="p-8">
-            <h4 className="text-[10px] font-tech font-bold text-white/30 uppercase tracking-widest mb-6">// RECENT_ACTIVITY</h4>
-            <div className="space-y-4">
-               {[1,2,3].map(i => (
-                 <div key={i} className="flex gap-4 items-start group">
-                    <div className="w-1 h-8 bg-white/5 group-hover:bg-primary transition-colors rounded-full" />
-                    <div>
-                       <p className="text-[10px] font-tech text-white uppercase mb-0.5">Vector Re-indexing</p>
-                       <p className="text-[9px] text-text-secondary uppercase">Node: Atlas | 14:02 PM</p>
-                    </div>
-                 </div>
-               ))}
+          <GlassCard className="p-8 border-white/5">
+            <h4 className="text-[10px] font-tech font-bold text-white uppercase tracking-widest mb-4">Supported Sources</h4>
+            <div className="space-y-3">
+              {SOURCE_TYPES.map(s => {
+                const Icon = SOURCE_ICONS[s.value] || FileText;
+                return (
+                  <div key={s.value} className="flex items-center gap-3">
+                    <Icon size={14} className="text-text-secondary shrink-0" />
+                    <span className="text-[11px] text-text-secondary font-sans">{s.label}</span>
+                  </div>
+                );
+              })}
             </div>
           </GlassCard>
         </div>
-
       </div>
     </div>
   );

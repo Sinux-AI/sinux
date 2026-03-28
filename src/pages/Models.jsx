@@ -5,11 +5,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 
-const MODEL_TIERS = [
-  { id: 0, name: "Quick Thinking", engine: "Llama 3.1 8B", context: "8K", rate: "R5.00/1M", description: "Optimized for speed and simple reasoning." },
-  { id: 1, name: "Premium (Pro)", engine: "Gemini 2.5 Pro", context: "1.5M", rate: "R25.00/1M", description: "Balanced performance for complex task orchestration." },
-  { id: 2, name: "Deluxe (Preview)", engine: "Gemini 3 Pro", context: "2M", rate: "R75.00/1M", description: "State-of-the-art reasoning for enterprise automation." }
-];
+import { MODEL_TIERS } from "../constants/ai.js";
 
 function Models() {
   const [selected, setSelected] = useState(MODEL_TIERS[1]);

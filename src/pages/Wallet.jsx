@@ -10,16 +10,22 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { useAuthStore } from "../authentication/authStore";
-import { getBalanceAsync, getUsageAnalyticsAsync, getTransactionsAsync, initializeTopUpAsync } from "../services/walletService";
+import { getBalanceAsync, getUsageAnalyticsAsync, getTransactionsAsync, initializeTopUpAsync, getExchangeRatesAsync } from "../services/walletService";
+import { getMyOrg } from "../services/organizationService";
 import { toast } from "react-hot-toast";
+import { getTierLabel } from "../constants/tiers";
+
 
 const WalletPage = () => {
-  const { organizationId, walletBalance, updateBilling, isLocked } = useAuthStore();
+  const { organizationId, walletBalance, updateBilling, isLocked, preferences, tier } = useAuthStore();
   const [activeTab, setActiveTab] = useState("usage");
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isUsd, setIsUsd] = useState(false); // Currency Toggle State
-  const USD_RATE = 0.053; // Mock conversion: 1 ZAR = 0.053 USD
+  const [rates, setRates] = useState(null);
+  
+  // Use preferences from store, fallback to ZAR/ZA
+  const userCurrency = preferences?.currency || "ZAR";
+  const userLocale = preferences?.country ? `en-${preferences.country}` : "en-ZA";
 
   const [usageRecords, setUsageRecords] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -32,24 +38,30 @@ const WalletPage = () => {
   const fetchFinancials = async () => {
     setLoading(true);
     try {
-      const [balance, usage, tx] = await Promise.all([
+      const [balance, usage, tx, orgData, ratesData] = await Promise.all([
         getBalanceAsync(organizationId),
         getUsageAnalyticsAsync(organizationId),
-        getTransactionsAsync(organizationId)
+        getTransactionsAsync(organizationId),
+        getMyOrg(),
+        getExchangeRatesAsync().catch(() => null),
       ]);
-      if (balance) updateBilling(balance.balance, balance.isLocked);
+      console.log("[WalletPage] Org Sync Response:", orgData);
+      if (balance) updateBilling(balance.balance, orgData?.data?.isLocked ?? false);
       setUsageRecords(usage || []);
       setTransactions(tx || []);
+      if (ratesData?.rates) setRates(ratesData.rates);
     } catch (err) { toast.error("Failed to sync financial data."); }
     finally { setLoading(false); }
   };
 
   const formatCurrency = (val) => {
-    const amount = isUsd ? val * USD_RATE : val;
-    return new Intl.NumberFormat('en-ZA', {
+    // Use live rates from backend, fallback to 1:1 if not loaded
+    const rate = (rates && userCurrency !== "ZAR") ? (rates[userCurrency] || 1) : 1;
+    const converted = val * rate;
+    return new Intl.NumberFormat(userLocale, {
       style: 'currency',
-      currency: isUsd ? 'USD' : 'ZAR',
-    }).format(amount);
+      currency: userCurrency,
+    }).format(converted);
   };
 
   const handleTopUp = async () => {
@@ -65,15 +77,9 @@ const WalletPage = () => {
     <div className="max-w-[1200px] mx-auto px-6 pb-20">
       <div className="flex justify-between items-end mb-8">
         <PageHeader title="Wallet & Billing" subtitle="Manage credits and monitor consumption." />
-        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/10 mb-6">
-          <button 
-            onClick={() => setIsUsd(false)}
-            className={`px-4 py-1.5 text-[10px] font-bold rounded-lg transition-all ${!isUsd ? 'bg-primary text-black' : 'text-text-secondary'}`}
-          >ZAR</button>
-          <button 
-            onClick={() => setIsUsd(true)}
-            className={`px-4 py-1.5 text-[10px] font-bold rounded-lg transition-all ${isUsd ? 'bg-primary text-black' : 'text-text-secondary'}`}
-          >USD</button>
+        <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl border border-white/10 mb-6 group hover:border-primary/30 transition-all">
+          <Globe size={14} className="text-primary" />
+          <span className="text-[10px] font-bold text-white uppercase tracking-widest">Region: {userCurrency} ({preferences?.country || "ZA"})</span>
         </div>
       </div>
 
@@ -86,7 +92,7 @@ const WalletPage = () => {
               <h2 className="text-5xl font-bold text-white tracking-tighter">{formatCurrency(walletBalance)}</h2>
               <div className="flex gap-2 mt-4">
                 <Badge variant={isLocked ? "danger" : "success"}>{isLocked ? "Account Locked" : "Active"}</Badge>
-                <Badge variant="ghost">Enterprise Tier</Badge>
+                <Badge variant="ghost">{getTierLabel(tier)}</Badge>
               </div>
             </div>
             <Button size="lg" className="rounded-2xl h-16 px-8 shadow-neon-primary" onClick={() => setShowTopUpModal(true)}>
@@ -180,9 +186,11 @@ const WalletPage = () => {
             
             <div className="space-y-6">
               <div>
-                <label className="text-[10px] text-text-secondary uppercase font-bold block mb-3">Amount (ZAR)</label>
+                <label className="text-[10px] text-text-secondary uppercase font-bold block mb-3">Amount ({userCurrency})</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">R</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">
+                    {userCurrency === "ZAR" ? "R" : userCurrency === "USD" ? "$" : userCurrency}
+                  </span>
                   <input 
                     type="number" 
                     className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-10 pr-4 text-2xl text-white outline-none focus:border-primary"

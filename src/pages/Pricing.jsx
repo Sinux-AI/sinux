@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Check, 
   ArrowRight, 
@@ -13,22 +13,126 @@ import { GlassCard } from "../components/ui/GlassCard";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
+import { useAuthStore } from "../authentication/authStore";
+import { getExchangeRatesAsync, purchaseTierAsync, initializeTopUpAsync, getTierPlansAsync } from "../services/walletService";
+import { Link, useNavigate } from "react-router-dom";
+import { useConfirmDialog } from "../components/ui/ConfirmDialog";
+import { toast } from "react-hot-toast";
 
 const Pricing = () => {
+  const { preferences, userId, organizationId, walletBalance, tier: currentTier } = useAuthStore();
+  const navigate = useNavigate();
+  const { confirmDialog, ConfirmDialogComponent } = useConfirmDialog();
+  
+  const authRoute = userId ? "/wallet" : "/auth?returnUrl=/pricing";
+  const userCurrency = preferences?.currency || "ZAR";
+  const [rates, setRates] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      getExchangeRatesAsync().catch(() => ({ rates: null })),
+      getTierPlansAsync().catch(() => [])
+    ]).then(([ratesData, plansData]) => {
+      if (ratesData?.rates) setRates(ratesData.rates);
+      setPlans(plansData || []);
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const rate = (rates && rates[userCurrency]) ? rates[userCurrency] : (userCurrency === "ZAR" ? 1 : null);
+  const symbol = userCurrency === "ZAR" ? "R" : userCurrency === "USD" ? "$" : userCurrency === "GBP" ? "£" : userCurrency === "EUR" ? "€" : userCurrency + " ";
+
+  const formatPrice = (zarPriceStr) => {
+    const zarValue = parseFloat(zarPriceStr.replace(/[^0-9.]/g, ''));
+    if (isNaN(zarValue)) return zarPriceStr;
+    
+    // If no rates loaded or user is ZAR, just show ZAR
+    if (!rate || userCurrency === "ZAR") {
+      return `R${zarValue.toLocaleString()}`;
+    }
+
+    const converted = zarValue * rate;
+    const localized = `${symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: converted < 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
+    return `${localized} (≈ R${zarValue.toLocaleString()})`;
+  };
+
+  const handleUpgrade = async (t) => {
+    if (!userId) {
+      navigate("/auth?returnUrl=/pricing");
+      return;
+    }
+
+    if (t.level === currentTier) return;
+    if (t.level < currentTier) {
+      toast("Downgrades are currently handled by our support team.", { icon: "ℹ️" });
+      return;
+    }
+
+    const zarPrice = parseFloat(t.price.replace(/[^0-9.]/g, ''));
+    
+    // Check balance
+    if (walletBalance >= zarPrice) {
+      const ok = await confirmDialog({
+        title: `Upgrade to ${t.name}`,
+        message: `Would you like to upgrade to the ${t.name} tier for ${formatPrice(t.price)} using your wallet balance? Your current balance is ${formatPrice(walletBalance.toString())}.`,
+        confirmLabel: "Purchase Upgrade",
+        variant: "primary"
+      });
+
+      if (ok) {
+        setIsProcessing(true);
+        try {
+          await purchaseTierAsync(t.level, organizationId);
+          toast.success(`Welcome to ${t.name}! Your workspace has been upgraded.`);
+          // Page will likely need a reload or state sync
+          setTimeout(() => window.location.reload(), 2000);
+        } catch (err) {
+          toast.error(err.response?.data?.message || "Failed to upgrade tier.");
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    } else {
+      // Prompt for top-up
+      const ok = await confirmDialog({
+        title: "Insufficient Balance",
+        message: `The ${t.name} tier costs ${formatPrice(t.price)}, but your current balance is ${formatPrice(walletBalance.toString())}. Would you like to top up and upgrade now?`,
+        confirmLabel: "Top up & Upgrade",
+        variant: "primary"
+      });
+
+      if (ok) {
+        setIsProcessing(true);
+        try {
+          // Initialize Top-up for the specific amount
+          const data = await initializeTopUpAsync(zarPrice, organizationId);
+          if (data?.authorization_url) window.location.href = data.authorization_url;
+        } catch (err) {
+          toast.error("Payment gateway offline.");
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    }
+  };
+
   const tiers = [
     {
-      name: "Free",
+      name: "Basic",
       level: 0,
       price: "R0",
-      description: "Ideal for testing workflows and initial integration.",
+      description: "Chat access with our lightest models. Pay only for what you use.",
       features: [
         "Quick Thinking (Llama 3.1 8B)",
         "Large Context (Gemini Flash)",
         "Core Tools (Search, Calculator)",
-        "Unlimited Workflows",
+        "Pay-As-You-Go Compute",
         "Community Support"
       ],
-      cta: "Get Started",
+      cta: "Start Basic",
       variant: "secondary"
     },
     {
@@ -54,7 +158,7 @@ const Pricing = () => {
       description: "Advanced agency for scaling organization teams.",
       features: [
         "Deluxe (Gemini 3 Pro) Access",
-        "Enterprise Suite (Slack, Discord)",
+        "Organization Suite (Slack, Discord)",
         "2M Token Context Window",
         "Shared Organization Wallet",
         "Priority Inference Queues"
@@ -66,7 +170,7 @@ const Pricing = () => {
         name: "Advanced",
         level: 3,
         price: "R2,500",
-        description: "Maximum compute for enterprise-scale automation.",
+        description: "Maximum compute for high-scale automation.",
         features: [
           "Advanced (Llama 70B) Access",
           "All Beta Tools & Integrations",
@@ -83,48 +187,51 @@ const Pricing = () => {
     {
       icon: <Zap className="text-primary" size={20} />,
       title: "Token Usage",
-      cost: "From R5.00 / 1M Tokens",
+      cost: `From ${formatPrice("R5")} / 1M Tokens`,
       desc: "Transparent pass-through costs based on model selection."
     },
     {
       icon: <Layers className="text-secondary" size={20} />,
       title: "Tool Execution",
-      cost: "R0.10 per call",
+      cost: `${formatPrice("R0.10")} per call`,
       desc: "Flat fee for external API actions (Email, GitHub, etc)."
     },
     {
       icon: <BarChart3 className="text-accent" size={20} />,
       title: "Orchestration",
-      cost: "R10.00 base fee",
+      cost: `${formatPrice("R10")} base fee`,
       desc: "Applied per multi-agent manager loop execution."
     }
   ];
 
   return (
     <div className="bg-background pb-32 relative isolate max-w-[1400px] mx-auto px-4 sm:px-8 w-full">
+      {ConfirmDialogComponent}
       {/* Visual Background Elements */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 blur-[120px] -z-10" />
       
       <PageHeader 
-        title="Enterprise Pricing" 
+        title="Sinux Pricing" 
         subtitle="Predictable monthly subscriptions paired with transparent, pay-as-you-grow usage fees." 
       />
 
       {/* Pricing Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
-        {tiers.map((t) => (
-          <GlassCard key={t.name} className={`relative flex flex-col p-8 border-white/5 transition-all duration-300 hover:border-white/10 ${t.popular ? 'border-primary/40 ring-1 ring-primary/20' : ''}`}>
-             {t.popular && (
+        {loading ? (
+          [...Array(4)].map((_, i) => <div key={i} className="h-[500px] rounded-[2rem] bg-white/[0.02] animate-pulse border border-white/5" />)
+        ) : plans.map((t) => (
+          <GlassCard key={t.tierName} className={`relative flex flex-col p-8 border-white/5 transition-all duration-300 hover:border-white/10 ${t.tierLevel === 1 ? 'border-primary/40 ring-1 ring-primary/20' : ''}`}>
+             {t.tierLevel === 1 && (
                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                  <Badge variant="primary" className="px-4 py-1 text-[10px] uppercase font-bold">Most Popular</Badge>
                </div>
              )}
              
              <div className="mb-6">
-                <h3 className="text-white font-semibold text-lg mb-2">{t.name}</h3>
-                <div className="flex items-baseline gap-1">
-                   <span className="text-4xl font-bold text-white tracking-tight">{t.price}</span>
-                   <span className="text-text-secondary text-sm">/mo</span>
+                <h3 className="text-white font-semibold text-lg mb-2">{t.tierName}</h3>
+                <div className="flex flex-col gap-1">
+                   <span className="text-3xl font-bold text-white tracking-tight">{formatPrice(`R${t.monthlyPriceZAR}`)}</span>
+                   <span className="text-text-secondary text-[10px] uppercase font-bold tracking-widest">per month</span>
                 </div>
              </div>
 
@@ -133,7 +240,11 @@ const Pricing = () => {
              </p>
 
              <div className="space-y-4 mb-10 flex-grow">
-                {t.features.map((f, i) => (
+                {/* 
+                   Map capabilities to a readable feature list. 
+                   Backend TierPlan likely has a Features list or we map from flags.
+                */}
+                {(t.features || []).map((f, i) => (
                   <div key={i} className="flex items-start gap-3">
                      <Check size={14} className="text-primary mt-1 shrink-0" />
                      <span className="text-[13px] text-text-secondary leading-tight">{f}</span>
@@ -141,8 +252,14 @@ const Pricing = () => {
                 ))}
              </div>
 
-             <Button variant={t.variant} size="lg" className="w-full rounded-xl font-medium">
-                {t.cta}
+             <Button 
+                variant={t.tierLevel === currentTier ? "ghost" : (t.tierLevel === 1 ? "primary" : "secondary")} 
+                size="lg" 
+                className={`w-full rounded-xl font-medium ${t.tierLevel === currentTier ? 'border-primary/40 text-primary cursor-default' : ''}`}
+                onClick={() => handleUpgrade(t)}
+                disabled={isProcessing || (userId && t.tierLevel === currentTier)}
+             >
+                {t.tierLevel === currentTier ? "Current Plan" : (t.tierLevel === 3 ? "Contact Sales" : `Upgrade to ${t.tierName}`)}
              </Button>
           </GlassCard>
         ))}
@@ -174,7 +291,7 @@ const Pricing = () => {
             <thead>
                 <tr className="border-b border-white/10 bg-white/[0.02]">
                     <th className="p-6 text-sm font-semibold text-white">Feature Comparison</th>
-                    <th className="p-6 text-sm font-semibold text-white">Free</th>
+                    <th className="p-6 text-sm font-semibold text-white">Basic</th>
                     <th className="p-6 text-sm font-semibold text-white">Professional</th>
                     <th className="p-6 text-sm font-semibold text-white">Premium</th>
                     <th className="p-6 text-sm font-semibold text-white">Advanced</th>
@@ -198,8 +315,8 @@ const Pricing = () => {
                 <tr className="border-b border-white/5">
                     <td className="p-6 text-white font-medium">Tool Access</td>
                     <td className="p-6">Basic Tools</td>
-                    <td className="p-6">Dev Suite</td>
-                    <td className="p-6">Enterprise Suite</td>
+                    <td className="p-6">Pro Suite</td>
+                    <td className="p-6">Organization Suite</td>
                     <td className="p-6">Full Beta Access</td>
                 </tr>
                 <tr className="border-b border-white/5">
@@ -225,15 +342,11 @@ const Pricing = () => {
          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none" />
          <h2 className="text-3xl font-bold text-white mb-4">Ready to scale your AI workforce?</h2>
          <p className="text-text-secondary mb-8 max-w-xl mx-auto">
-            Join enterprise teams building autonomous agents with full financial transparency and security.
+            Join thousands of teams building autonomous agents with full financial transparency and security.
          </p>
          <div className="flex justify-center gap-4">
-            <Button variant="primary" size="lg" className="px-10 rounded-xl">
-               Start Building Now
-            </Button>
-            <Button variant="ghost" size="lg" className="px-10 rounded-xl border border-white/10">
-               View Documentation
-            </Button>
+            <Link to={authRoute}><Button variant="primary" size="lg" className="px-10 rounded-xl">Start Building Now</Button></Link>
+            <Link to="/agents"><Button variant="ghost" size="lg" className="px-10 rounded-xl border border-white/10">View Agents</Button></Link>
          </div>
       </GlassCard>
     </div>

@@ -16,14 +16,63 @@ import {
 import { GlassCard } from "../ui/GlassCard";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../authentication/authStore";
+import { useConfirmDialog } from "../ui/ConfirmDialog";
+import { purchaseTierAsync, initializeTopUpAsync } from "../../services/walletService";
+import { toast } from "react-hot-toast";
 
 export const Features = () => {
+  const { userId, organizationId, walletBalance, tier: currentTier } = useAuthStore();
+  const navigate = useNavigate();
+  const { confirmDialog, ConfirmDialogComponent } = useConfirmDialog();
+  const [isProcessing, setIsProcessing] = React.useState(false);
+
+  const handleUpgrade = async (name, level, priceStr) => {
+    if (!userId) {
+      navigate("/auth");
+      return;
+    }
+
+    if (level === currentTier) return;
+    
+    const zarPrice = parseFloat(priceStr.replace(/[^0-9.]/g, ''));
+    if (walletBalance >= zarPrice) {
+      const ok = await confirmDialog({
+        title: `Upgrade to ${name}`,
+        message: `Upgrade to ${name} for R${zarPrice}?`,
+        variant: "primary"
+      });
+      if (ok) {
+        setIsProcessing(true);
+        try {
+          await purchaseTierAsync(level, organizationId);
+          toast.success("Upgraded!");
+          setTimeout(() => window.location.reload(), 1000);
+        } catch (err) { toast.error("Upgrade failed."); }
+        finally { setIsProcessing(false); }
+      }
+    } else {
+      const ok = await confirmDialog({
+        title: "Top-up Required",
+        message: `You need R${zarPrice} to upgrade. Proceed to payment?`,
+        variant: "primary"
+      });
+      if (ok) {
+        setIsProcessing(true);
+        try {
+          const data = await initializeTopUpAsync(zarPrice, organizationId);
+          if (data?.authorization_url) window.location.href = data.authorization_url;
+        } catch (err) { toast.error("Gateway error."); }
+        finally { setIsProcessing(false); }
+      }
+    }
+  };
   return (
     <>
       {/* === SECTION 1: HOW CONNECTIVITY WORKS === */}
       <section className="grid grid-cols-1 md:grid-cols-12 gap-6 relative z-10 mb-20 animate-in fade-in duration-1000 delay-300 slide-in-from-bottom-12">
-        {/* ENTERPRISE CONNECTIVITY - MAIN CARD */}
+        {/* STRATEGIC CONNECTIVITY - MAIN CARD */}
         <GlassCard interactive className="md:col-span-8 min-h-[460px] flex flex-col p-10 group overflow-hidden">
           <div className="absolute -bottom-1/2 -right-1/4 w-[600px] h-[600px] bg-primary/20 blur-[100px] rounded-full pointer-events-none group-hover:bg-primary/30 transition-colors duration-700" />
           
@@ -32,7 +81,7 @@ export const Features = () => {
               <div className="flex items-center gap-3 text-primary mb-6">
                 <Terminal size={20} className="shadow-neon-primary" />
                 <span className="text-tech tracking-[0.3em] text-primary">
-                  ENTERPRISE CONNECTIVITY
+                  STRATEGIC CONNECTIVITY
                 </span>
               </div>
               <h3 className="text-4xl md:text-6xl text-insane text-white mix-blend-screen drop-shadow-xl group-hover:glow-text-primary transition-all">
@@ -63,7 +112,7 @@ export const Features = () => {
                 <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
                 <div className="w-3 h-3 rounded-full bg-primary/80 shadow-neon-primary" />
               </div>
-              <p className="text-text-secondary"># Integrating Enterprise CRM docs...</p>
+              <p className="text-text-secondary"># Integrating Business CRM docs...</p>
               <p className="text-primary drop-shadow-[0_0_8px_rgba(157,78,221,0.6)]">{`> Extracted: POST /leads/sync`}</p>
               <p className="text-text-secondary italic">{`// Mapping business logic...`}</p>
               <p className="text-success">{`✓ Strategic tool registered to Agent "Atlas"`}</p>
@@ -94,7 +143,7 @@ export const Features = () => {
             <Cpu className="text-secondary group-hover:drop-shadow-[0_0_12px_rgba(255,0,85,0.8)] transition-all duration-500" size={32} />
             <div>
               <h4 className="text-2xl lg:text-3xl text-insane text-white group-hover:glow-text-primary transition-all">Intelligence Agnostic</h4>
-              <p className="text-tech text-secondary mt-3 shadow-neon-pink">Enterprise Grade Hub</p>
+              <p className="text-tech text-secondary mt-3 shadow-neon-pink">Premium Workforce Hub</p>
             </div>
           </GlassCard>
         </div>
@@ -150,7 +199,7 @@ export const Features = () => {
             STRATEGIC IMPACT
           </span>
           <h2 className="text-4xl md:text-5xl text-insane text-white mb-4">
-            Enterprise Solutions
+            Organization Solutions
           </h2>
           <p className="text-text-secondary font-sans text-lg max-w-2xl mx-auto">
             Sinux scales with your organization, providing specialized AI workforce 
@@ -195,12 +244,13 @@ export const Features = () => {
 
       {/* === SECTION 3: PRICING === */}
       <section id="pricing" className="relative z-10 mb-24">
+        {ConfirmDialogComponent}
         <div className="text-center mb-16">
           <span className="text-tech text-secondary tracking-[0.3em] text-xs font-bold mb-4 block">
             TRANSPARENT PRICING
           </span>
           <h2 className="text-4xl md:text-5xl text-insane text-white mb-4">
-            Start Free. Scale As You Go.
+            Start Basic. Scale As You Go.
           </h2>
           <p className="text-text-secondary font-sans text-lg max-w-2xl mx-auto">
             No subscriptions required for agents. Pay only for what your agents consume.
@@ -208,11 +258,11 @@ export const Features = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {/* Free Tier */}
+          {/* Basic Tier */}
           <GlassCard interactive className="p-10 flex flex-col group">
-            <Badge variant="neutral" className="w-max mb-6">FREE</Badge>
-            <h3 className="text-3xl text-insane text-white mb-2">Starter</h3>
-            <p className="text-text-secondary font-sans text-sm mb-8">Perfect for hobbyists and experimentation.</p>
+            <Badge variant="neutral" className="w-max mb-6">BASIC</Badge>
+            <h3 className="text-3xl text-insane text-white mb-2">Basic</h3>
+            <p className="text-text-secondary font-sans text-sm mb-8">Lightest models, pay only for what you use.</p>
             <ul className="space-y-4 mb-10 flex-1">
               {[
                 "Up to 3 agents",
@@ -227,11 +277,14 @@ export const Features = () => {
                 </li>
               ))}
             </ul>
-            <Link to="/auth">
-              <Button variant="ghost" className="w-full border border-white/10 hover:border-primary/40">
-                Get Started
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              className="w-full border border-white/10 hover:border-primary/40"
+              disabled={isProcessing || (userId && currentTier === 0)}
+              onClick={() => handleUpgrade("Basic", 0, "0")}
+            >
+              {userId && currentTier === 0 ? "Current Plan" : "Get Started"}
+            </Button>
           </GlassCard>
 
           {/* Pro Tier */}
@@ -256,11 +309,14 @@ export const Features = () => {
                 </li>
               ))}
             </ul>
-            <Link to="/auth">
-              <Button variant="primary" className="w-full shadow-neon-primary relative z-10">
-                Start Building
-              </Button>
-            </Link>
+            <Button 
+              variant="primary" 
+              className="w-full shadow-neon-primary relative z-10"
+              disabled={isProcessing || (userId && currentTier >= 1)}
+              onClick={() => handleUpgrade("Professional", 1, "250")}
+            >
+              {userId && currentTier >= 1 ? "Current Plan" : "Start Building"}
+            </Button>
           </GlassCard>
         </div>
       </section>
@@ -284,7 +340,7 @@ export const Features = () => {
               Configure model, context, and parameters dynamically per request —
               like OpenAI's API, but with multiple models and custom agent configs.
             </p>
-            <Link to="/auth">
+            <Link to={"/dashboard/api"}>
               <Button variant="ghost" className="border border-accent/30 hover:border-accent/60 text-accent hover:text-white">
                 View API Docs <ArrowUpRight size={16} className="ml-2" />
               </Button>
