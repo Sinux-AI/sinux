@@ -45,19 +45,23 @@ const Pricing = () => {
   const rate = (rates && rates[userCurrency]) ? rates[userCurrency] : (userCurrency === "ZAR" ? 1 : null);
   const symbol = userCurrency === "ZAR" ? "R" : userCurrency === "USD" ? "$" : userCurrency === "GBP" ? "£" : userCurrency === "EUR" ? "€" : userCurrency + " ";
 
-  const formatPrice = (zarPriceStr) => {
+  const formatPrice = (zarPriceStr, isPromo = false) => {
     const zarValue = parseFloat(zarPriceStr.replace(/[^0-9.]/g, ''));
     if (isNaN(zarValue)) return zarPriceStr;
     
+    const finalZarValue = isPromo ? zarValue * 0.5 : zarValue;
+    
     // If no rates loaded or user is ZAR, just show ZAR
     if (!rate || userCurrency === "ZAR") {
-      return `R${zarValue.toLocaleString()}`;
+      return `R${finalZarValue.toLocaleString()}`;
     }
 
-    const converted = zarValue * rate;
+    const converted = finalZarValue * rate;
     const localized = `${symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: converted < 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
-    return `${localized} (≈ R${zarValue.toLocaleString()})`;
+    return `${localized} (≈ R${finalZarValue.toLocaleString()})`;
   };
+
+  const isEligibleForPromo = new Date() < new Date("2026-06-30");
 
   const handleUpgrade = async (t) => {
     if (!userId) {
@@ -65,19 +69,25 @@ const Pricing = () => {
       return;
     }
 
-    if (t.level === currentTier) return;
-    if (t.level < currentTier) {
+    const level = t.tierLevel ?? t.level;
+    const name = t.tierName ?? t.name;
+    const rawPrice = t.monthlyPriceZAR ?? t.price;
+    
+    if (level === currentTier) return;
+    if (level < currentTier) {
       toast("Downgrades are currently handled by our support team.", { icon: "ℹ️" });
       return;
     }
 
-    const zarPrice = parseFloat(t.price.replace(/[^0-9.]/g, ''));
+    const zarPrice = typeof rawPrice === 'number' 
+      ? rawPrice 
+      : parseFloat((rawPrice || "0").toString().replace(/[^0-9.]/g, ''));
     
     // Check balance
     if (walletBalance >= zarPrice) {
       const ok = await confirmDialog({
-        title: `Upgrade to ${t.name}`,
-        message: `Would you like to upgrade to the ${t.name} tier for ${formatPrice(t.price)} using your wallet balance? Your current balance is ${formatPrice(walletBalance.toString())}.`,
+        title: `Upgrade to ${name}`,
+        message: `Would you like to upgrade to the ${name} tier for ${formatPrice(`R${zarPrice}`)} using your wallet balance? Your current balance is ${formatPrice(walletBalance.toString())}.`,
         confirmLabel: "Purchase Upgrade",
         variant: "primary"
       });
@@ -85,10 +95,16 @@ const Pricing = () => {
       if (ok) {
         setIsProcessing(true);
         try {
-          await purchaseTierAsync(t.level, organizationId);
-          toast.success(`Welcome to ${t.name}! Your workspace has been upgraded.`);
-          // Page will likely need a reload or state sync
-          setTimeout(() => window.location.reload(), 2000);
+          await purchaseTierAsync(level, organizationId);
+          toast.success(`Welcome to ${name}! Your workspace has been upgraded.`);
+          
+          // Trigger Real-time JWT Sync via session refresh
+          const { supabase } = await import("../services/api.config"); // Need to check if it has supabase
+          if (supabase) {
+             await supabase.auth.refreshSession();
+          } else {
+             window.location.reload(); // Fallback
+          }
         } catch (err) {
           toast.error(err.response?.data?.message || "Failed to upgrade tier.");
         } finally {
@@ -99,7 +115,7 @@ const Pricing = () => {
       // Prompt for top-up
       const ok = await confirmDialog({
         title: "Insufficient Balance",
-        message: `The ${t.name} tier costs ${formatPrice(t.price)}, but your current balance is ${formatPrice(walletBalance.toString())}. Would you like to top up and upgrade now?`,
+        message: `The ${name} tier costs ${formatPrice(`R${zarPrice}`)}, but your current balance is ${formatPrice(walletBalance.toString())}. Would you like to top up and upgrade now?`,
         confirmLabel: "Top up & Upgrade",
         variant: "primary"
       });
@@ -230,7 +246,19 @@ const Pricing = () => {
              <div className="mb-6">
                 <h3 className="text-white font-semibold text-lg mb-2">{t.tierName}</h3>
                 <div className="flex flex-col gap-1">
-                   <span className="text-3xl font-bold text-white tracking-tight">{formatPrice(`R${t.monthlyPriceZAR}`)}</span>
+                   {isEligibleForPromo && t.tierLevel > 0 ? (
+                     <div className="flex flex-col">
+                       <span className="text-text-muted text-xs line-through mb-1 opacity-60">
+                         {formatPrice(`R${t.monthlyPriceZAR}`, false)}
+                       </span>
+                       <div className="flex items-center gap-2">
+                          <span className="text-3xl font-bold text-white tracking-tight">{formatPrice(`R${t.monthlyPriceZAR}`, true)}</span>
+                          <Badge variant="primary" className="bg-primary/20 text-primary text-[9px] py-0 px-2 rounded-lg border-none">50% PROMO</Badge>
+                       </div>
+                     </div>
+                   ) : (
+                     <span className="text-3xl font-bold text-white tracking-tight">{formatPrice(`R${t.monthlyPriceZAR}`)}</span>
+                   )}
                    <span className="text-text-secondary text-[10px] uppercase font-bold tracking-widest">per month</span>
                 </div>
              </div>

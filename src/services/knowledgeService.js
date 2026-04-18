@@ -1,7 +1,5 @@
 import { sinuxApi } from "./api.config";
 
-import { SOURCE_TYPES, DOCUMENT_STATUS } from "../constants/integrations.js";
-
 /**
  * Uploads a document or URL reference to the RAG system.
  * Uses multipart/form-data. Returns 202 with { documentId }.

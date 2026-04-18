@@ -56,7 +56,7 @@ const SectionHeader = ({ icon: Icon, title, subtitle }) => (
       <Icon size={20} className="text-primary" />
     </div>
     <div>
-      <h2 className="text-base font-bold text-white">{title}</h2>
+      <h2 className="text-base font-bold text-text-primary">{title}</h2>
       <p className="text-xs text-text-secondary mt-0.5">{subtitle}</p>
     </div>
   </div>
@@ -66,15 +66,15 @@ const Toggle = ({ checked, onChange, label, desc }) => (
   <button
     onClick={() => onChange(!checked)}
     className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
-      checked ? "border-primary/40 bg-primary/5" : "border-white/10 bg-white/5 hover:border-white/20"
+      checked ? "border-primary/40 bg-primary/5" : "border-border-glow bg-text-primary/5 hover:border-text-primary/20"
     }`}
   >
     <div>
-      <p className={`text-sm font-semibold ${checked ? "text-white" : "text-text-secondary"}`}>{label}</p>
+      <p className={`text-sm font-semibold ${checked ? "text-text-primary" : "text-text-secondary"}`}>{label}</p>
       {desc && <p className="text-[11px] text-text-secondary mt-0.5">{desc}</p>}
     </div>
-    <div className={`w-12 h-6 rounded-full transition-all relative shrink-0 ml-4 ${checked ? "bg-primary" : "bg-white/20"}`}>
-      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${checked ? "left-7" : "left-1"}`} />
+    <div className={`w-12 h-6 rounded-full transition-all relative shrink-0 ml-4 ${checked ? "bg-primary" : "bg-text-primary/20"}`}>
+      <div className={`absolute top-1 w-4 h-4 bg-background rounded-full shadow transition-all ${checked ? "left-7" : "left-1"}`} />
     </div>
   </button>
 );
@@ -136,7 +136,7 @@ export default function Settings() {
         <PageHeader title="Settings" subtitle="Manage your personal preferences." />
         <div className="grid gap-6 mt-6">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-40 rounded-[2rem] bg-white/[0.02] animate-pulse border border-white/5" />
+            <div key={i} className="h-40 rounded-[2rem] bg-text-primary/[0.02] animate-pulse border border-border-glow" />
           ))}
         </div>
       </div>
@@ -171,12 +171,12 @@ export default function Settings() {
                 className={`relative p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all group ${
                   prefs.theme === value
                     ? "border-primary bg-primary/10 shadow-[0_0_20px_rgba(207,255,4,0.12)]"
-                    : "border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/8"
+                    : "border-border-glow bg-text-primary/5 hover:border-text-primary/25 hover:bg-text-primary/10"
                 }`}
               >
-                <Icon size={22} className={prefs.theme === value ? "text-primary" : "text-text-secondary group-hover:text-white transition-colors"} />
+                <Icon size={22} className={prefs.theme === value ? "text-primary" : "text-text-secondary group-hover:text-text-primary transition-colors"} />
                 <div className="text-center">
-                  <p className={`text-xs font-bold ${prefs.theme === value ? "text-white" : "text-text-secondary"}`}>{label}</p>
+                  <p className={`text-xs font-bold ${prefs.theme === value ? "text-text-primary" : "text-text-secondary"}`}>{label}</p>
                   <p className="text-[9px] text-text-secondary mt-0.5 leading-tight">{desc}</p>
                 </div>
                 {prefs.theme === value && (
@@ -197,7 +197,7 @@ export default function Settings() {
             className={`w-full p-6 rounded-2xl border-2 flex items-center gap-6 transition-all ${
               prefs.soundsEnabled
                 ? "border-primary bg-primary/10 shadow-[0_0_24px_rgba(207,255,4,0.1)]"
-                : "border-white/10 bg-white/5 hover:border-white/20"
+                : "border-border-glow bg-text-primary/5 hover:border-text-primary/20"
             }`}
           >
             {prefs.soundsEnabled ? (
@@ -206,7 +206,7 @@ export default function Settings() {
               <VolumeX size={32} className="text-text-secondary shrink-0" />
             )}
             <div className="text-left flex-1">
-              <p className="text-base font-bold text-white mb-1">
+              <p className="text-base font-bold text-text-primary mb-1">
                 {prefs.soundsEnabled ? "Sounds On" : "Sounds Off"}
               </p>
               <p className="text-xs text-text-secondary">
@@ -215,8 +215,8 @@ export default function Settings() {
                   : "Running in silent mode — no audio feedback"}
               </p>
             </div>
-            <div className={`w-14 h-7 rounded-full transition-all relative shrink-0 ${prefs.soundsEnabled ? "bg-primary" : "bg-white/20"}`}>
-              <div className={`absolute top-1.5 w-4 h-4 bg-white rounded-full shadow transition-all ${prefs.soundsEnabled ? "left-9" : "left-1"}`} />
+            <div className={`w-14 h-7 rounded-full transition-all relative shrink-0 ${prefs.soundsEnabled ? "bg-primary" : "bg-text-primary/20"}`}>
+              <div className={`absolute top-1.5 w-4 h-4 bg-background rounded-full shadow transition-all ${prefs.soundsEnabled ? "left-9" : "left-1"}`} />
             </div>
           </button>
         </GlassCard>
@@ -254,10 +254,10 @@ export default function Settings() {
                 <select
                   value={prefs.country}
                   onChange={(e) => handleCountryChange(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white outline-none focus:border-primary focus:shadow-[0_0_15px_rgba(207,255,4,0.1)] transition-all appearance-none cursor-pointer"
+                  className="w-full bg-surface border border-border-glow rounded-xl px-5 py-4 text-text-primary outline-none focus:border-primary focus:shadow-[0_0_15px_rgba(207,255,4,0.1)] transition-all appearance-none cursor-pointer"
                 >
                   {COUNTRIES.map(({ code, name }) => (
-                    <option key={code} value={code} className="bg-[#0a0a0f]">{name}</option>
+                    <option key={code} value={code} className="bg-surface-raised">{name}</option>
                   ))}
                 </select>
                 <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary">
@@ -270,8 +270,8 @@ export default function Settings() {
               <label className="font-tech text-[10px] font-bold text-text-secondary uppercase tracking-[0.2em] ml-1">
                 Currency <span className="text-primary/60 normal-case tracking-normal">(auto-matched)</span>
               </label>
-              <div className="w-full bg-black/30 border border-white/5 rounded-xl px-5 py-4 flex items-center justify-between">
-                <span className="text-white text-sm">
+              <div className="w-full bg-surface-raised border border-border-glow rounded-xl px-5 py-4 flex items-center justify-between">
+                <span className="text-text-primary text-sm">
                   {COUNTRY_TO_CURRENCY[prefs.country]?.name ?? prefs.currency}
                 </span>
                 <span className="text-[10px] font-tech text-primary/60 uppercase tracking-widest">Auto</span>
@@ -284,7 +284,7 @@ export default function Settings() {
 
       {/* Save Bar */}
       <div className={`fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${dirty ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
-        <div className="flex items-center gap-3 bg-[#0e0e16] border border-white/10 rounded-2xl px-5 py-3 shadow-2xl backdrop-blur-xl">
+        <div className="flex items-center gap-3 bg-surface-raised border border-border-glow rounded-2xl px-5 py-3 shadow-2xl backdrop-blur-xl">
           <p className="text-sm text-text-secondary font-medium">You have unsaved changes</p>
           <Button
             variant="primary"

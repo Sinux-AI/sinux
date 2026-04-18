@@ -144,8 +144,8 @@ function Orchestration() {
       <div className="absolute -bottom-[10%] -left-[10%] w-[600px] h-[600px] bg-accent/5 blur-[150px] rounded-full pointer-events-none -z-10" />
 
       <PageHeader
-        title="Multi-Agent Orchestration"
-        subtitle="Compose complex tasks across a team of specialized agents. The Manager decomposes your goal; Specialists execute in parallel or sequence."
+        title="Multi-Agent Project Coordination"
+        subtitle="Coordinate complex tasks across a team of specialized agents. The Manager analyzes your objectives; Specialists execute in parallel or sequence."
       />
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
@@ -153,12 +153,12 @@ function Orchestration() {
         <div className="xl:col-span-5 space-y-6">
           <GlassCard className="p-8 rounded-[2rem] border-white/5">
             <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-              <Network size={16} className="text-primary" /> Task Composer
+              <Network size={16} className="text-primary" /> Project Plan
             </h3>
 
             {/* Prompt */}
             <div className="mb-6">
-              <label className="text-[10px] font-tech text-text-secondary uppercase tracking-widest block mb-2">High-Level Objective *</label>
+              <label className="text-[10px] font-tech text-text-secondary uppercase tracking-widest block mb-2">Overall Objective *</label>
               <textarea value={prompt} onChange={e => setPrompt(e.target.value)}
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-primary transition-all min-h-[100px] resize-none font-sans"
                 placeholder="e.g. Research competitors in the AI SaaS space, build a comparison report, and draft a strategic response plan..." />
@@ -176,7 +176,7 @@ function Orchestration() {
 
             {/* Strategy */}
             <div className="mb-6">
-              <label className="text-[10px] font-tech text-text-secondary uppercase tracking-widest block mb-3">Execution Strategy</label>
+              <label className="text-[10px] font-tech text-text-secondary uppercase tracking-widest block mb-3">Workflow Strategy</label>
               <div className="space-y-2">
                 {ORCHESTRATION_STRATEGIES.map(s => {
                   const isLocked = s.value === "AutonomousGroupChat" && !canUseManager;
@@ -195,7 +195,7 @@ function Orchestration() {
                         {strategy === s.value && !isLocked && <div className="w-2 h-2 rounded-full bg-primary" />}
                       </div>
                       <p className="text-[10px] text-text-secondary">
-                        {isLocked ? "Premium tier required for Autonomous Manager loops." : s.desc}
+                        {isLocked ? "Premium tier required for Autonomous Manager flows." : s.desc}
                       </p>
                     </button>
                   );
@@ -234,7 +234,7 @@ function Orchestration() {
             <Button variant="primary" size="lg" className="w-full rounded-xl shadow-neon-primary"
               onClick={handleLaunch} disabled={launching}>
               <Play size={16} className="mr-2 fill-current" />
-              {launching ? "Launching..." : "Launch Orchestration"}
+              {launching ? "Starting..." : "Start Project"}
             </Button>
           </GlassCard>
         </div>
@@ -244,7 +244,7 @@ function Orchestration() {
           <GlassCard className="p-8 rounded-[2rem] border-white/5 h-full">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                <Activity size={16} className="text-secondary" /> Subtask Timeline
+                <Activity size={16} className="text-secondary" /> Project Timeline
               </h3>
               {pollPhase === "polling" && (
                 <Badge variant="info" className="animate-pulse flex items-center gap-1">
@@ -271,15 +271,15 @@ function Orchestration() {
             {pollPhase === "idle" && subtasks.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
                 <Network size={40} className="mb-4" />
-                <p className="text-sm font-tech uppercase tracking-widest font-bold">No active orchestration</p>
-                <p className="text-xs text-text-secondary mt-2">Compose a task and launch to see subtasks here.</p>
+                <p className="text-sm font-tech uppercase tracking-widest font-bold">No active projects</p>
+                <p className="text-xs text-text-secondary mt-2">Compose a plan and start to see progress here.</p>
               </div>
             ) : (
               <div className="space-y-3 overflow-y-auto max-h-[600px] pr-1">
                 {subtasks.length === 0 && pollPhase === "polling" && (
                   <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl border border-primary/20 animate-pulse">
                     <RefreshCw size={16} className="text-primary" />
-                    <span className="text-xs text-text-secondary">Manager is decomposing your task...</span>
+                    <span className="text-xs text-text-secondary">Analyzing project requirements...</span>
                   </div>
                 )}
                 {[...subtasks]

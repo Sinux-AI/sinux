@@ -34,44 +34,50 @@ function ExecutionHistory({ workflowId, onClose }) {
   }, [workflowId]);
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-[#0a0a0f] border-l border-white/10 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-      <div className="flex items-center justify-between p-6 border-b border-white/5">
-        <div className="flex items-center gap-3">
-          <History size={18} className="text-primary" />
-          <h3 className="text-sm font-bold text-white uppercase tracking-widest">Execution History</h3>
+    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-lg bg-surface border-l border-border-glow shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 ease-out backdrop-blur-3xl">
+      <div className="flex items-center justify-between p-10 border-b border-border-glow/50 bg-surface/50">
+        <div className="flex items-center gap-5">
+          <div className="p-2.5 bg-primary/10 rounded-xl text-primary"><History size={20} /></div>
+          <div className="space-y-0.5">
+            <h3 className="text-xl font-black text-text-primary uppercase tracking-tight">Workflow History</h3>
+            <p className="text-[10px] text-text-secondary uppercase tracking-[0.3em] font-black opacity-40">Previous execution log</p>
+          </div>
         </div>
-        <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 text-text-secondary hover:text-white transition-all">
-          <X size={18} />
+        <button onClick={onClose} className="p-3 rounded-2xl border border-border-glow hover:bg-text-primary/5 text-text-secondary transition-all active:scale-95">
+          <X size={20} />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto p-10 space-y-6 custom-scrollbar">
         {loading ? (
-          [...Array(4)].map((_, i) => <div key={i} className="h-16 rounded-xl bg-white/[0.03] animate-pulse border border-white/5" />)
+          [...Array(4)].map((_, i) => <div key={i} className="h-24 rounded-[1.5rem] bg-text-primary/[0.02] animate-pulse border border-border-glow" />)
         ) : history.length === 0 ? (
-          <div className="text-center py-16 opacity-30">
-            <Clock size={32} className="mx-auto mb-3" />
-            <p className="text-xs font-tech uppercase tracking-widest">No executions yet</p>
+          <div className="text-center py-24 border-2 border-dashed border-border-glow rounded-[2rem] bg-text-primary/[0.01]">
+            <Clock size={40} className="mx-auto mb-4 text-text-secondary/20" />
+            <p className="text-[10px] font-black text-text-secondary/40 uppercase tracking-[0.4em]">No recent activity found</p>
           </div>
         ) : history.map((exec, i) => {
           const cfg = EXEC_STATUS[exec.status] || EXEC_STATUS.Pending;
           const Icon = cfg.icon;
           return (
-            <div key={exec.workflowExecutionId || i} className="p-4 bg-white/[0.02] rounded-xl border border-white/5 space-y-3">
+            <div key={exec.workflowExecutionId || i} className="p-6 bg-surface-raised/40 rounded-[1.5rem] border border-border-glow space-y-5 transition-all hover:border-primary/20 group/exec">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-text-secondary font-tech uppercase">
-                  {exec.startedAt ? new Date(exec.startedAt).toLocaleString() : "—"}
-                </span>
-                <Badge variant={cfg.variant} className={`flex items-center gap-1 ${cfg.pulse ? 'animate-pulse' : ''}`}>
-                  <Icon size={9} /> {exec.status}
+                <div className="space-y-1">
+                   <p className="text-[9px] text-text-secondary/40 font-black uppercase tracking-widest leading-none">Timestamp</p>
+                   <span className="text-[11px] text-text-primary font-mono font-bold">
+                     {exec.startedAt ? new Date(exec.startedAt).toLocaleString() : "—"}
+                   </span>
+                </div>
+                <Badge variant={cfg.variant} className={`flex items-center gap-2 px-4 py-1.5 border-border-glow text-[9px] font-black uppercase tracking-widest ${cfg.pulse ? 'animate-pulse' : ''}`}>
+                  <Icon size={10} /> {exec.status}
                 </Badge>
               </div>
               {exec.progress !== undefined && (
-                <div>
-                  <div className="flex justify-between text-[9px] text-text-secondary mb-1">
-                    <span>Progress</span><span>{exec.progress}%</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-text-secondary/40">
+                    <span>Automation Progress</span><span>{exec.progress}%</span>
                   </div>
-                  <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary transition-all" style={{ width: `${exec.progress || 0}%` }} />
+                  <div className="h-1.5 bg-text-primary/5 rounded-full overflow-hidden border border-border-glow/30">
+                    <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${exec.progress || 0}%` }} />
                   </div>
                 </div>
               )}
@@ -160,14 +166,13 @@ const Workflows = () => {
   };
 
   return (
-    <div className="bg-background pb-20 relative isolate max-w-[1400px] mx-auto px-4 sm:px-8 w-full">
+    <div className="bg-background min-h-screen pb-32 relative isolate max-w-[1600px] mx-auto px-6 md:px-14 w-full animate-in fade-in slide-in-from-bottom-6 duration-1000 ease-out">
       {/* Background orbs */}
-      <div className="absolute top-[20%] -left-[10%] w-[500px] h-[500px] bg-primary/5 blur-[150px] rounded-full pointer-events-none -z-10" />
-      <div className="absolute bottom-[10%] -right-[10%] w-[600px] h-[600px] bg-accent/5 blur-[150px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[20%] -left-[10%] w-[500px] h-[500px] bg-primary/2 blur-[150px] rounded-full pointer-events-none -z-10" />
 
       <PageHeader
-        title={view === "editor" ? `Editor: ${selectedWorkflow?.name}` : "Workflows"}
-        subtitle={view === "editor" ? "Visual canvas — connect nodes to define your automation logic." : "Build complex multi-agent automation loops with a visual canvas."}
+        title={view === "editor" ? `Canvas: ${selectedWorkflow?.name}` : "Automation Workflows"}
+        subtitle={view === "editor" ? "Design automated agent sequences and logic flows." : "Automate complex tasks with visual workflow coordination."}
       />
 
       {view === "editor" ? (
@@ -187,77 +192,84 @@ const Workflows = () => {
         </div>
       ) : (
         <>
-          <div className="flex justify-between items-center mb-8">
-            <p className="text-xs text-text-secondary uppercase tracking-widest font-bold">
-              {loading ? "Loading..." : `${workflows.length} workflows`}
+          <div className="flex justify-between items-center mb-12">
+            <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.4em] ml-2">
+              {loading ? "Synchronizing..." : `Operational Pipelines: ${workflows.length}`}
             </p>
-            <Button variant="primary" size="md" className="rounded-full shadow-neon-primary" onClick={handleCreate}>
-              <Plus size={16} className="mr-2" /> New Workflow
+            <Button variant="primary" className="rounded-2xl shadow-neon-primary px-10 h-14 text-[10px] uppercase font-black tracking-[0.3em]" onClick={handleCreate}>
+              <Plus size={18} className="mr-3" /> Create Workflow
             </Button>
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, i) => <div key={i} className="h-64 rounded-[2rem] bg-white/[0.02] animate-pulse border border-white/5" />)}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, i) => <div key={i} className="h-80 rounded-[3rem] bg-text-primary/[0.02] animate-pulse border border-border-glow" />)}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in slide-in-from-bottom-8 duration-700">
               {workflows.map(wf => {
                 const statusCfg = STATUS_CONFIG[wf.status] || STATUS_CONFIG.Active;
                 const isRunning = runningIds.has(wf.workflowId);
                 return (
-                  <GlassCard key={wf.workflowId} interactive className="group relative overflow-hidden border-white/5 hover:border-primary/40 transition-all duration-500 flex flex-col p-8">
+                  <GlassCard key={wf.workflowId} interactive className="group relative overflow-hidden border-border-glow hover:border-primary/20 transition-all duration-700 flex flex-col p-12 rounded-[3.5rem] bg-surface shadow-sm active:scale-[0.98]">
+                    {/* Mesh Glow */}
+                    <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/5 rounded-full blur-[60px] group-hover:bg-primary/10 transition-all duration-700" />
+                    
                     {/* Status badge */}
-                    <div className="absolute top-5 right-5">
-                      <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+                    <div className="absolute top-10 right-10 z-10">
+                      <Badge variant={statusCfg.variant} className="px-5 py-1.5 border-border-glow text-[9px] font-black uppercase tracking-widest">{statusCfg.label}</Badge>
                     </div>
 
                     {/* Icon + name */}
-                    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors duration-500">
-                      <Layers size={22} className="text-primary" />
+                    <div className="w-16 h-16 bg-text-primary/[0.03] rounded-3xl flex items-center justify-center mb-10 group-hover:bg-primary/5 group-hover:text-primary transition-all duration-700 border border-border-glow group-hover:border-primary/20 shadow-sm relative z-10">
+                      <Layers size={28} className="text-text-secondary/60 group-hover:text-primary transition-colors duration-700" />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-primary transition-colors pr-20 leading-tight">
+                    
+                    <h3 className="text-2xl font-black text-text-primary mb-3 group-hover:text-primary transition-colors pr-20 leading-none uppercase tracking-tight relative z-10">
                       {wf.name}
                     </h3>
-                    <p className="text-sm text-text-secondary font-sans line-clamp-2 mb-6 leading-relaxed flex-1">
-                      {wf.description || "No description."}
+                    <p className="text-[13px] text-text-secondary/60 font-medium line-clamp-2 mb-10 leading-relaxed flex-1 relative z-10">
+                      {wf.description || "Custom automated workflow sequence."}
                     </p>
 
-                    {/* Stats */}
-                    <div className="flex items-center gap-4 p-4 bg-black/40 rounded-2xl border border-white/5 mb-6">
-                      <div className="flex flex-col">
-                        <span className="text-[9px] font-tech text-text-secondary uppercase mb-0.5">Nodes</span>
-                        <span className="text-lg font-bold text-white">{wf.nodeCount ?? 0}</span>
+                    {/* Stats Matrix */}
+                    <div className="grid grid-cols-4 items-center gap-0 bg-text-primary/[0.02] rounded-3xl border border-border-glow mb-10 relative z-10 overflow-hidden">
+                      <div className="flex flex-col p-5 items-center justify-center bg-surface-raised/30 border-r border-border-glow">
+                        <span className="text-[8px] font-black text-text-secondary/40 uppercase tracking-widest mb-1">Nodes</span>
+                        <span className="text-xl font-black text-text-primary font-mono leading-none">{wf.nodeCount ?? 0}</span>
                       </div>
-                      <div className="h-8 w-[1px] bg-white/10" />
-                      <div className="flex flex-col">
-                        <span className="text-[9px] font-tech text-text-secondary uppercase mb-0.5">Edges</span>
-                        <span className="text-lg font-bold text-white">{wf.edgeCount ?? 0}</span>
+                      <div className="flex flex-col p-5 items-center justify-center border-r border-border-glow">
+                        <span className="text-[8px] font-black text-text-secondary/40 uppercase tracking-widest mb-1">Edges</span>
+                        <span className="text-xl font-black text-text-primary font-mono leading-none">{wf.edgeCount ?? 0}</span>
                       </div>
                       <button onClick={() => setHistoryWorkflowId(wf.workflowId)}
-                        className="ml-auto flex items-center gap-1.5 text-[10px] text-text-secondary hover:text-white transition-colors">
-                        <History size={13} /> Runs
+                        className="col-span-2 flex flex-col p-5 items-center justify-center hover:bg-primary/5 transition-colors group/runs">
+                        <span className="text-[8px] font-black text-text-secondary/40 uppercase tracking-widest mb-1 group-hover/runs:text-primary transition-colors">Activity History</span>
+                        <div className="flex items-center gap-2">
+                           <History size={14} className="text-text-secondary/30 group-hover/runs:text-primary transition-colors" />
+                           <span className="text-[9px] font-black text-text-primary uppercase tracking-widest">View Logs</span>
+                        </div>
                       </button>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                      <div className="flex gap-2">
+                    {/* Actions Panel */}
+                    <div className="flex items-center justify-between pt-10 border-t border-border-glow/40 relative z-10">
+                      <div className="flex gap-3">
                         <button onClick={() => handleDelete(wf)}
-                          className="p-2 rounded-xl hover:bg-error/10 text-text-secondary hover:text-error transition-all">
-                          <Trash2 size={14} />
+                          className="p-3 rounded-2xl hover:bg-error/10 text-text-secondary/30 hover:text-error transition-all active:scale-95 border border-transparent hover:border-error/20">
+                          <Trash2 size={18} />
                         </button>
                         <button onClick={() => handleEdit(wf)}
-                          className="p-2 rounded-xl hover:bg-white/10 text-text-secondary hover:text-white transition-all">
-                          <Settings2 size={14} />
+                          className="p-3 rounded-2xl hover:bg-text-primary/5 text-text-secondary/30 hover:text-text-primary transition-all active:scale-95 border border-transparent hover:border-border-glow">
+                          <Settings2 size={18} />
                         </button>
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" className="rounded-full px-5 text-xs border border-white/10 hover:border-primary/40" onClick={() => handleEdit(wf)}>
-                          Editor
+                      <div className="flex gap-4">
+                        <Button variant="ghost" className="rounded-2xl px-10 h-12 text-[10px] font-black uppercase tracking-[0.2em] border border-border-glow hover:bg-surface-raised transition-all" onClick={() => handleEdit(wf)}>
+                          Blueprint
                         </Button>
-                        <Button variant="primary" size="sm" className="rounded-full px-4 shadow-neon-primary" onClick={() => handleExecute(wf.workflowId)} disabled={isRunning}>
-                          {isRunning ? <RefreshCw size={13} className="animate-spin" /> : <Play size={13} className="fill-current" />}
+                        <Button variant="primary" className="rounded-2xl px-8 h-12 shadow-neon-primary transition-all active:scale-95" onClick={() => handleExecute(wf.workflowId)} disabled={isRunning}>
+                          {isRunning ? <RefreshCw size={16} className="animate-spin" /> : <Play size={16} className="fill-current" />}
                         </Button>
                       </div>
                     </div>
@@ -265,16 +277,19 @@ const Workflows = () => {
                 );
               })}
 
-              {/* Create placeholder */}
+              {/* Provision Blueprint Card */}
               <GlassCard interactive
-                className="border-dashed border-2 border-white/10 flex flex-col items-center justify-center p-12 hover:border-primary/50 group transition-all cursor-pointer"
+                className="border-dashed border-2 border-border-glow/60 flex flex-col items-center justify-center p-16 hover:border-primary/40 group transition-all cursor-pointer rounded-[3.5rem] bg-text-primary/[0.01] hover:bg-primary/[0.02]"
                 onClick={handleCreate}>
-                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-5 group-hover:bg-primary/10 transition-colors">
-                  <Plus size={28} className="text-white/20 group-hover:text-primary transition-colors" />
+                <div className="w-24 h-24 rounded-[2rem] bg-text-primary/[0.03] flex items-center justify-center mb-8 group-hover:bg-primary/10 transition-all duration-700 border border-transparent group-hover:border-primary/20 shadow-sm">
+                  <Plus size={36} className="text-text-secondary/40 group-hover:text-primary transition-all" />
                 </div>
-                <p className="text-sm font-bold text-text-secondary uppercase tracking-widest group-hover:text-white transition-colors">
-                  New Workflow
-                </p>
+                 <div className="text-center space-y-1">
+                    <p className="text-xl font-black text-text-secondary/40 uppercase tracking-tighter group-hover:text-text-primary transition-colors leading-none">
+                      New Workflow
+                    </p>
+                    <p className="text-[10px] text-text-secondary/20 uppercase tracking-[0.4em] font-black">Design new logic</p>
+                 </div>
               </GlassCard>
             </div>
           )}
@@ -283,13 +298,16 @@ const Workflows = () => {
 
       {/* Tier Gate Overlay */}
       {!canUseWorkflows && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/40 backdrop-blur-sm rounded-[2rem] overflow-hidden">
-          <GlassCard className="max-w-md p-10 text-center border-primary/20 bg-primary/5">
-            <Lock size={40} className="text-primary mx-auto mb-6" />
-            <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-tight">Professional Feature</h2>
-            <p className="text-text-secondary mb-8 text-sm">Automated workflows require a Professional tier subscription or higher.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/40 backdrop-blur-[60px] animate-in fade-in duration-1000 ease-out">
+          <GlassCard className="max-w-xl p-20 text-center border-primary/20 bg-surface shadow-[0_32px_120px_rgba(0,0,0,0.1)] rounded-[4rem] relative overflow-hidden group/gate">
+            <div className="absolute -top-32 -right-32 w-80 h-80 bg-primary/10 rounded-full blur-[100px] animate-pulse" />
+            <div className="w-32 h-32 bg-primary/10 rounded-[3rem] flex items-center justify-center text-primary mx-auto mb-10 shadow-neon-primary rotate-6 group-hover/gate:rotate-0 transition-transform duration-700">
+               <Lock size={56} />
+            </div>
+            <h2 className="text-4xl font-black text-text-primary mb-4 uppercase tracking-tighter leading-none">Professional Access Required</h2>
+            <p className="text-text-secondary/60 mb-12 text-lg font-medium leading-relaxed px-6">Advanced multi-agent workflows are a **Professional** feature. Upgrade your plan to unlock this feature.</p>
             <Link to="/pricing" className="w-full">
-              <Button variant="primary" size="lg" className="w-full rounded-xl shadow-neon-primary">Upgrade Now</Button>
+              <Button variant="primary" className="w-full rounded-[2rem] shadow-neon-primary h-16 text-[11px] uppercase font-black tracking-[0.3em]">View Pricing Plans</Button>
             </Link>
           </GlassCard>
         </div>

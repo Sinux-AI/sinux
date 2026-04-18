@@ -17,7 +17,7 @@ function ConfirmDialogModal({ title, message, confirmLabel, variant, onConfirm, 
       aria-labelledby="confirm-title"
       aria-describedby="confirm-message"
     >
-      <div className="bg-[#0a0a0f] border border-white/10 rounded-[2rem] w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="bg-surface-raised border border-border-glow rounded-[2rem] w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between p-7 pb-4">
           <div className="flex items-center gap-3">
@@ -36,7 +36,7 @@ function ConfirmDialogModal({ title, message, confirmLabel, variant, onConfirm, 
           </div>
           <button
             onClick={onCancel}
-            className="p-1.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-all"
+            className="p-1.5 rounded-lg hover:bg-border-glow text-text-secondary hover:text-white transition-all"
             aria-label="Cancel"
           >
             <X size={16} />
@@ -57,7 +57,7 @@ function ConfirmDialogModal({ title, message, confirmLabel, variant, onConfirm, 
             <Button
               variant="ghost"
               onClick={onCancel}
-              className="flex-1 rounded-xl border border-white/10"
+              className="flex-1 rounded-xl border border-border-glow"
             >
               Cancel
             </Button>

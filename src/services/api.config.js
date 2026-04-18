@@ -1,4 +1,5 @@
 import axios from "axios";
+import { createClient } from "@supabase/supabase-js";
 import { useAuthStore } from "../authentication/authStore";
 import { toast } from "react-hot-toast";
 
@@ -88,4 +89,10 @@ const setupInterceptor = (apiInstance) => {
 // Only apply the 401-refresh interceptor to the main API.
 // Do NOT apply it to authApi — the refresh-token call itself lives on authApi,
 // so intercepting its 401 would create a circular retry loop.
+// --- Supabase Client ---
+export const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
+
 setupInterceptor(sinuxApi);

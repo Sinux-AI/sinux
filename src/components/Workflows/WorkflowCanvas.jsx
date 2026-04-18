@@ -14,7 +14,8 @@ import {
 import { GlassCard } from '../ui/GlassCard';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { NODE_TYPES } from '../../constants/workflows.js';
+import { useConfigStore } from '../../stores/configStore';
+import { NODE_UI_CONFIG, getNodeIcon, getNodeColor } from '../../constants/workflows.js';
 
 /* ────────────────────────────────────────────────────────────────────────────
  * Helper: generate unique IDs
@@ -47,25 +48,27 @@ function NodePalette({ onAddNode, collapsed, onToggle }) {
 
         {/* Node list */}
         <div className={`flex-1 overflow-y-auto py-3 space-y-1 ${collapsed ? 'px-1.5' : 'px-3'}`}>
-          {Object.entries(NODE_TYPES).map(([type, info]) => {
-            const Icon = info.icon;
+          {useConfigStore.getState().workflowNodes.map((nodeType) => {
+            const Icon = getNodeIcon(nodeType.type);
+            const color = getNodeColor(nodeType.type);
             return (
               <button
-                key={type}
-                onClick={() => onAddNode(type)}
+                key={nodeType.type}
+                onClick={() => onAddNode(nodeType.type)}
                 className={`w-full flex items-center gap-3 rounded-xl transition-all duration-200 
                   hover:bg-white/[0.06] active:scale-[0.97] group border border-transparent hover:border-white/10
                   ${collapsed ? 'p-2 justify-center' : 'p-3'}`}
-                title={info.label}
+                title={nodeType.label}
               >
                 <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors
-                  bg-${info.color}/10 text-${info.color} group-hover:bg-${info.color}/20`}>
+                  bg-${color}/10 text-${color} group-hover:bg-${color}/20`}>
                   <Icon size={18} />
                 </div>
                 {!collapsed && (
                   <div className="text-left min-w-0">
-                    <p className="text-xs font-tech font-bold text-white/80 group-hover:text-white truncate">{info.label}</p>
-                    <p className="text-[9px] text-text-secondary truncate leading-tight mt-0.5">{info.description}</p>
+                    <p className="text-xs font-tech font-bold text-white/80 group-hover:text-white truncate">{nodeType.label}</p>
+                    {/* Backend might not provide description, we can use a default or category */}
+                    <p className="text-[9px] text-text-secondary truncate leading-tight mt-0.5">{nodeType.category || 'Pipeline Tool'}</p>
                   </div>
                 )}
               </button>
@@ -119,7 +122,9 @@ const WorkflowCanvas = ({ workflow, onSave, onChange }) => {
 
   // ── Add node from palette ──
   const handleAddNode = useCallback((type) => {
-    const typeInfo = NODE_TYPES[type];
+    const { workflowNodes } = useConfigStore.getState();
+    const nodeTypeInfo = workflowNodes.find(n => n.type === type);
+    
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     // Place near center of visible canvas
     const centerX = canvasRect ? (canvasRect.width / 2 - transform.x) / transform.scale - NODE_WIDTH / 2 : 200;
@@ -130,10 +135,10 @@ const WorkflowCanvas = ({ workflow, onSave, onChange }) => {
     const newNode = {
       nodeId: uid('node'),
       type,
-      label: typeInfo.label,
+      label: nodeTypeInfo?.label || type,
       positionX: centerX + offset,
       positionY: centerY + offset,
-      config: { ...(typeInfo.defaultConfig || {}) },
+      config: {}, // Backend defines default configs usually
     };
     setNodes(prev => [...prev, newNode]);
     setSelectedNodeId(newNode.nodeId);
@@ -161,7 +166,7 @@ const WorkflowCanvas = ({ workflow, onSave, onChange }) => {
     setTempEdgeEnd(null);
   };
 
-  const finishConnection = (targetNodeId, targetSide) => {
+  const finishConnection = (targetNodeId) => {
     if (!connectingFrom) return;
     if (connectingFrom.nodeId === targetNodeId) { cancelConnection(); return; }
     // Don't allow duplicate edges
@@ -345,7 +350,8 @@ const WorkflowCanvas = ({ workflow, onSave, onChange }) => {
         style={{ transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`, transformOrigin: '0 0' }}
       >
         {nodes.map(node => {
-          const typeInfo = NODE_TYPES[node.type] || NODE_TYPES.AgentInference;
+          const Icon = getNodeIcon(node.type);
+          const color = getNodeColor(node.type);
           const isSelected = node.nodeId === selectedNodeId;
           return (
             <div 
@@ -360,10 +366,12 @@ const WorkflowCanvas = ({ workflow, onSave, onChange }) => {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
                   <div className="flex items-center gap-2">
-                    <div className={`p-2 bg-${typeInfo.color}/10 rounded-lg text-${typeInfo.color}`}>
-                      <typeInfo.icon size={20} />
+                    <div className={`p-2 bg-${color}/10 rounded-lg text-${color}`}>
+                      <Icon size={20} />
                     </div>
-                    <span className="text-[10px] font-tech text-white/50 tracking-widest uppercase">{typeInfo.label}</span>
+                    <span className="text-[10px] font-tech text-white/50 tracking-widest uppercase">
+                      {useConfigStore.getState().workflowNodes.find(n => n.type === node.type)?.label || node.type}
+                    </span>
                   </div>
                   {/* Drag handle */}
                   <div 
@@ -488,5 +496,141 @@ const WorkflowCanvas = ({ workflow, onSave, onChange }) => {
     </div>
   );
 };
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Sub-component: Node Properties Panel (right sidebar)
+ * ──────────────────────────────────────────────────────────────────────────── */
+function NodePropertiesPanel({ node, onUpdate, onClose, onDelete }) {
+  const [label, setLabel] = useState(node.label);
+  const [config, setConfig] = useState(node.config || {});
+  const [newKey, setNewKey] = useState("");
+  const [newVal, setNewVal] = useState("");
+
+  // Update effect when node changes
+  useEffect(() => {
+    setLabel(node.label);
+    setConfig(node.config || {});
+  }, [node]);
+
+  const handleSave = () => {
+    onUpdate({ ...node, label, config });
+    onClose();
+  };
+
+  const updateConfig = (key, val) => {
+    const updated = { ...config, [key]: val };
+    setConfig(updated);
+  };
+
+  const removeConfig = (key) => {
+    const updated = { ...config };
+    delete updated[key];
+    setConfig(updated);
+  };
+
+  const addConfig = () => {
+    if (!newKey.trim()) return;
+    updateConfig(newKey.trim(), newVal);
+    setNewKey("");
+    setNewVal("");
+  };
+
+  const color = getNodeColor(node.type);
+  const Icon = getNodeIcon(node.type);
+
+  return (
+    <div className="absolute top-0 right-0 z-[120] w-80 h-full bg-[#08080d]/95 backdrop-blur-xl border-l border-white/5 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+      <div className="p-6 border-b border-white/5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 bg-${color}/10 rounded-lg text-${color}`}>
+            <Icon size={18} />
+          </div>
+          <div>
+            <p className="text-[10px] font-tech text-text-secondary uppercase tracking-widest">Properties</p>
+            <p className="text-xs font-bold text-white uppercase tracking-tight">{node.type}</p>
+          </div>
+        </div>
+        <button onClick={onClose} className="text-text-secondary hover:text-white transition-colors">
+          <X size={20} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+        {/* Basic Info */}
+        <section className="space-y-4">
+          <label className="block">
+            <span className="text-[10px] font-tech text-text-secondary uppercase tracking-widest block mb-2">Display Name</span>
+            <input 
+              type="text" 
+              value={label} 
+              onChange={e => setLabel(e.target.value)}
+              className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-primary/50 outline-none transition-all"
+            />
+          </label>
+        </section>
+
+        {/* Configuration */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-tech text-text-secondary uppercase tracking-widest">Configuration</span>
+          </div>
+          
+          <div className="space-y-3">
+            {Object.entries(config).map(([key, val]) => (
+              <div key={key} className="flex flex-col gap-2 p-3 bg-white/[0.02] border border-white/5 rounded-xl group">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono text-primary/50">{key}</span>
+                  <button onClick={() => removeConfig(key)} className="text-white/10 hover:text-error transition-colors">
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+                <input 
+                  type="text" 
+                  value={String(val)} 
+                  onChange={e => updateConfig(key, e.target.value)}
+                  className="bg-transparent border-none p-0 text-xs text-white/80 focus:ring-0 outline-none"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Add New Key */}
+          <div className="pt-4 border-t border-white/5 space-y-3">
+            <p className="text-[9px] text-text-secondary uppercase tracking-widest">Add Property</p>
+            <div className="grid grid-cols-2 gap-2">
+              <input 
+                placeholder="Key" 
+                value={newKey} 
+                onChange={e => setNewKey(e.target.value)}
+                className="bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white outline-none"
+              />
+              <input 
+                placeholder="Value" 
+                value={newVal} 
+                onChange={e => setNewVal(e.target.value)}
+                className="bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white outline-none"
+              />
+            </div>
+            <Button variant="secondary" size="sm" className="w-full h-9 rounded-lg text-[9px] uppercase tracking-widest" onClick={addConfig}>
+              <Plus size={12} className="mr-2" /> Add Field
+            </Button>
+          </div>
+        </section>
+      </div>
+
+      <div className="p-6 border-t border-white/5 bg-[#08080d]/50 space-y-3">
+        <Button variant="primary" className="w-full h-12 rounded-xl text-xs uppercase tracking-widest shadow-neon-primary" onClick={handleSave}>
+          Apply Changes
+        </Button>
+        <button 
+          onClick={() => { if(confirm("Delete this node?")) onDelete(node.nodeId); }}
+          className="w-full py-3 text-[10px] uppercase tracking-[0.2em] text-text-secondary hover:text-error transition-colors"
+        >
+          Remove Node
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default WorkflowCanvas;

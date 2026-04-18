@@ -1,19 +1,22 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #9D4EDD;
-  --color-secondary: #FF0055;
-  --color-accent: #00F0FF;
-  --color-background: #030305;
-  --color-surface: rgba(10, 10, 15, 0.4);
-  --color-surface-raised: rgba(15, 15, 20, 0.6);
-  --color-border-glow: rgba(255, 255, 255, 0.1);
-  --color-text-primary: #F4F4F5;
-  --color-text-secondary: #8A8F98;
-  --color-success: #00FF9D;
-  --color-info: #00B8FF;
-  --color-warning: #FFB800;
-  --color-neutral: #3A3F48;
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-text-primary: var(--text-main);
+  --color-text-secondary: var(--text-muted);
+  --color-border-glow: var(--border-glow);
+  --color-border-primary: var(--border-primary);
+  --color-success: var(--success);
+  --color-info: var(--info);
+  --color-warning: var(--warning);
+  --color-neutral: var(--neutral);
+  --color-white: var(--white-val);
+  --color-black: var(--black-val);
 
   --font-mono: "Space Grotesk", sans-serif;
   --font-sans: "Inter", sans-serif;
@@ -21,20 +24,63 @@
   --font-tech: "Space Grotesk", sans-serif;
   --font-insane: "Syne", sans-serif;
 
-  --shadow-neon-primary: 0 0 15px rgba(157, 78, 221, 0.3);
-  --shadow-neon-pink: 0 0 15px rgba(255, 0, 85, 0.3);
-  --shadow-neon-accent: 0 0 15px rgba(0, 240, 255, 0.3);
-  --shadow-glass-inner: inset 0 2px 20px rgba(255, 255, 255, 0.05);
+  --shadow-neon-primary: var(--shadow-neon-prim);
+  --shadow-neon-pink: var(--shadow-neon-pink-val);
+  --shadow-neon-accent: var(--shadow-neon-acc);
+  --shadow-glass-inner: var(--shadow-glass-in);
+}
 
-  /* Animation Overrides if used */
-  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  --animate-float: float 6s ease-in-out infinite;
-  --animate-gradient-x: gradient-x 10s ease infinite;
+:root {
+  --bg: #FAF9FD; /* Soft Warm Lilac White */
+  --surface: rgba(255, 255, 255, 0.4);
+  --surface-raised: #ffffff;
+  --primary: #7C3AED; /* Royal Violet (Warm Purple) */
+  --secondary: #EC4899; /* Pink/Rose warmth */
+  --accent: #7E22CE;
+  --text-main: #1F162A; /* Deep Obsidian Plum */
+  --text-muted: #6B6B7A; /* Slate with purple hint */
+  --border-glow: rgba(0, 0, 0, 0.04);
+  --border-primary: rgba(124, 58, 237, 0.12);
+  --success: #059669;
+  --info: #0284C7;
+  --warning: #D97706;
+  --neutral: #F5F3FF;
+  --white-val: #1F162A;
+  --black-val: #ffffff;
+
+  --shadow-neon-prim: 0 10px 30px -10px rgba(124, 58, 237, 0.15), 0 2px 4px rgba(0, 0, 0, 0.02);
+  --shadow-neon-pink-val: 0 10px 30px -10px rgba(236, 72, 153, 0.1);
+  --shadow-neon-acc: 0 10px 30px -10px rgba(126, 34, 206, 0.1);
+  --shadow-glass-in: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.dark {
+  --bg: #080511; /* Deepest Purple Midnight */
+  --surface: rgba(15, 10, 25, 0.4);
+  --surface-raised: rgba(20, 15, 30, 0.6);
+  --primary: #A855F7; /* Vibrant warm purple */
+  --secondary: #F472B6; /* Pink 400 */
+  --accent: #D8B4FE; /* Purple 300 boost */
+  --text-main: #FDFDFD;
+  --text-muted: #94A3B8;
+  --border-glow: rgba(168, 85, 247, 0.1);
+  --border-primary: rgba(168, 85, 247, 0.2);
+  --success: #10B981;
+  --info: #38BDF8;
+  --warning: #FBBF24;
+  --neutral: #1E1B4B; /* Deep indigo/purple neutral */
+  --white-val: #ffffff;
+  --black-val: #000000;
+
+  --shadow-neon-prim: 0 0 20px rgba(168, 85, 247, 0.2);
+  --shadow-neon-acc: 0 0 20px rgba(216, 180, 254, 0.2);
+  --shadow-neon-pink-val: 0 0 20px rgba(244, 114, 182, 0.2);
+  --shadow-glass-in: inset 0 2px 20px rgba(255, 255, 255, 0.05);
 }
 
 @layer base {
   body {
-    @apply bg-[#030305] text-[#F4F4F5] font-sans antialiased selection:bg-[#9D4EDD] selection:text-white;
+    @apply bg-background text-text-primary font-sans antialiased selection:bg-primary selection:text-white;
   }
   
   /* Custom Scrollbar */
@@ -51,7 +97,7 @@
     transition: background-color 0.3s;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(157, 78, 221, 0.5); /* Primary color */
+    background-color: rgba(124, 58, 237, 0.5); /* Violet-600 */
   }
 }
 
@@ -65,23 +111,40 @@
   }
 
   .glass-panel {
-    @apply bg-surface backdrop-blur-2xl border border-border-glow rounded-[2rem] shadow-glass-inner;
+    @apply bg-surface backdrop-blur-md border border-border-glow rounded-[2rem] shadow-glass-inner;
   }
   
   .glass-panel-interactive {
-    @apply bg-surface backdrop-blur-2xl border border-border-glow rounded-[2rem] shadow-glass-inner transition-all duration-300 hover:border-primary/30 hover:bg-surface-raised hover:shadow-neon-primary;
+    @apply bg-surface backdrop-blur-md border border-border-glow rounded-[2rem] shadow-glass-inner transition-all duration-200 hover:border-primary/30 hover:bg-surface-raised active:scale-[0.99] cursor-pointer;
   }
 
   .glow-text-primary {
-    @apply text-primary drop-shadow-[0_0_12px_rgba(157,78,221,0.6)];
+    @apply text-primary drop-shadow-[0_0_12px_rgba(124,58,237,0.6)];
   }
   
   .glow-text-accent {
-    @apply text-accent drop-shadow-[0_0_12px_rgba(0,240,255,0.6)];
+    @apply text-accent drop-shadow-[0_0_12px_rgba(168,85,247,0.6)];
   }
 
   .bg-noise {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
     background-repeat: repeat;
   }
+
+  .markdown-content h1 { @apply text-2xl font-black mb-6 uppercase tracking-tight text-text-primary; }
+  .markdown-content h2 { @apply text-xl font-black mb-5 uppercase tracking-tight text-text-primary; }
+  .markdown-content h3 { @apply text-lg font-black mb-4 uppercase tracking-tight text-text-primary; }
+  .markdown-content p { @apply mb-4 leading-relaxed text-[15px] last:mb-0; }
+  .markdown-content ul { @apply list-disc list-inside mb-4 space-y-2; }
+  .markdown-content ol { @apply list-decimal list-inside mb-4 space-y-2; }
+  .markdown-content li { @apply text-[15px] leading-relaxed; }
+  .markdown-content table { @apply w-full mb-6 border-collapse rounded-xl overflow-hidden; }
+  .markdown-content th { @apply px-4 py-3 bg-text-primary/5 text-left text-[11px] font-black uppercase tracking-widest text-text-secondary/60 border-b border-border-glow; }
+  .markdown-content td { @apply px-4 py-3 text-sm border-b border-border-glow/30; }
+  .markdown-content pre { @apply mb-6 rounded-2xl overflow-hidden border border-border-glow shadow-sm bg-black/20 backdrop-blur-sm; }
+  .markdown-content code { @apply font-mono text-sm px-1.5 py-0.5 rounded-md bg-text-primary/5 text-primary; }
+  .markdown-content pre code { @apply block p-5 bg-transparent text-inherit border-none; }
+  .markdown-content a { @apply text-primary hover:underline decoration-primary/30 underline-offset-4 font-bold; }
+  .markdown-content blockquote { @apply border-l-4 border-primary/30 pl-6 py-2 mb-6 italic text-text-secondary bg-primary/5 rounded-r-2xl; }
+  .markdown-content hr { @apply border-t border-border-glow my-8; }
 }

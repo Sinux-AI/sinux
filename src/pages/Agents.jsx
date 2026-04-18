@@ -17,7 +17,7 @@ import {
 import { toast } from "react-hot-toast";
 import { useConfirmDialog } from "../components/ui/ConfirmDialog";
 import { ROLES, EMPTY_FORM } from "../constants/agents.js";
-import { AI_MODELS } from "../constants/ai.js";
+import { useConfigStore } from "../stores/configStore";
 
 // ── Tag input helper ─────────────────────────────────────────────────────────
 function TagInput({ label, values = [], onChange, placeholder }) {
@@ -53,8 +53,10 @@ function TagInput({ label, values = [], onChange, placeholder }) {
 
 // ── Agent Form Modal ─────────────────────────────────────────────────────────
 function AgentModal({ agent, onClose, onSave, organizationId }) {
-  const { tier: userTier } = useAuthStore();
-  const [form, setForm] = useState(agent ? { ...agent } : { ...EMPTY_FORM, organizationId });
+  const { tier: userTier, capabilities } = useAuthStore();
+  const { models } = useConfigStore();
+  const { allowsDynamicTools, allowsWorkflows } = capabilities || {};
+  const [form, setForm] = useState(agent ? { ...agent } : { ...EMPTY_FORM, organizationId, baseEngine: models[0]?.id || "Advanced" });
   const [saving, setSaving] = useState(false);
   const isNew = !agent?.agentProfileId;
 
@@ -75,9 +77,9 @@ function AgentModal({ agent, onClose, onSave, organizationId }) {
     }
     
     // Tier check for model
-    const selectedModel = AI_MODELS.find(m => m.value === form.baseEngine);
+    const selectedModel = models.find(m => m.id === form.baseEngine);
     if (selectedModel && selectedModel.minTier > userTier) {
-      toast.error(`The ${selectedModel.label} engine requires a higher subscription tier.`);
+      toast.error(`The ${selectedModel.name} engine requires a higher subscription tier.`);
       return false;
     }
 
@@ -144,9 +146,9 @@ function AgentModal({ agent, onClose, onSave, organizationId }) {
               <label className="text-[10px] font-tech text-text-secondary uppercase tracking-widest block mb-2">Base Engine *</label>
               <select value={form.baseEngine} onChange={e => set("baseEngine", e.target.value)}
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary transition-all text-sm appearance-none cursor-pointer">
-                {AI_MODELS.map(m => (
-                  <option key={m.value} value={m.value} disabled={m.minTier > userTier}>
-                    {m.label} {m.minTier > userTier ? "(Locked - Needs Upgrade)" : ""}
+                {models.map(m => (
+                  <option key={m.id} value={m.id} disabled={m.minTier > userTier}>
+                    {m.name} {m.minTier > userTier ? "(Locked - Needs Upgrade)" : ""}
                   </option>
                 ))}
               </select>
@@ -212,25 +214,29 @@ function AgentModal({ agent, onClose, onSave, organizationId }) {
             </div>
           </div>
 
-          {/* Toggles */}
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { key: "memoryEnabled", label: "Memory", desc: "Persist context between sessions" },
-              { key: "knowledgeBaseEnabled", label: "Knowledge Base", desc: "Enable RAG retrieval" },
-            ].map(({ key, label, desc }) => (
-              <button key={key} onClick={() => set(key, !form[key])}
-                className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${form[key] ? 'bg-primary/10 border-primary/30' : 'bg-white/[0.02] border-white/5 hover:border-white/10'}`}>
-                <div className="text-left">
-                  <p className="text-xs font-bold text-white">{label}</p>
-                  <p className="text-[9px] text-text-secondary">{desc}</p>
-                </div>
-                {form[key] ? <ToggleRight size={22} className="text-primary shrink-0" /> : <ToggleLeft size={22} className="text-white/20 shrink-0" />}
-              </button>
-            ))}
-          </div>
+          {/* Toggles - Requires Workflows capability */}
+          {allowsWorkflows && (
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { key: "memoryEnabled", label: "Memory", desc: "Persist context between sessions" },
+                { key: "knowledgeBaseEnabled", label: "Knowledge Base", desc: "Enable RAG retrieval" },
+              ].map(({ key, label, desc }) => (
+                <button key={key} onClick={() => set(key, !form[key])}
+                  className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${form[key] ? 'bg-primary/10 border-primary/30' : 'bg-white/[0.02] border-white/5 hover:border-white/10'}`}>
+                  <div className="text-left">
+                    <p className="text-xs font-bold text-white">{label}</p>
+                    <p className="text-[9px] text-text-secondary">{desc}</p>
+                  </div>
+                  {form[key] ? <ToggleRight size={22} className="text-primary shrink-0" /> : <ToggleLeft size={22} className="text-white/20 shrink-0" />}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Tag inputs */}
-          <TagInput label="Active Tools" values={form.activeTools} onChange={v => set("activeTools", v)} placeholder="Slack, GitHub, Stripe..." />
+          {allowsDynamicTools && (
+            <TagInput label="Active Tools" values={form.activeTools} onChange={v => set("activeTools", v)} placeholder="Slack, GitHub, Stripe..." />
+          )}
           <TagInput label="Active Knowledge Bases" values={form.activeKnowledgeBases} onChange={v => set("activeKnowledgeBases", v)} placeholder="KB_ID or name..." />
           <TagInput label="Capabilities" values={form.capabilities} onChange={v => set("capabilities", v)} placeholder="code-review, data-analysis..." />
         </div>
@@ -248,6 +254,7 @@ function AgentModal({ agent, onClose, onSave, organizationId }) {
 
 // ── Agent Card ───────────────────────────────────────────────────────────────
 function AgentCard({ agent, isBase, onEdit, onDelete, onDuplicate, selected, onClick }) {
+  const { tier: userTier } = useAuthStore();
   return (
     <div
       onClick={onClick}
@@ -275,8 +282,10 @@ function AgentCard({ agent, isBase, onEdit, onDelete, onDuplicate, selected, onC
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {!isBase && <button onClick={e => { e.stopPropagation(); onEdit(agent); }}
             className="p-1.5 rounded-lg hover:bg-white/10 text-text-secondary hover:text-white transition-all"><Sliders size={12} /></button>}
-          <button onClick={e => { e.stopPropagation(); onDuplicate(agent); }}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-text-secondary hover:text-white transition-all"><Copy size={12} /></button>
+          {userTier > 0 && (
+            <button onClick={e => { e.stopPropagation(); onDuplicate(agent); }}
+              className="p-1.5 rounded-lg hover:bg-white/10 text-text-secondary hover:text-white transition-all"><Copy size={12} /></button>
+          )}
           {!isBase && <button onClick={e => { e.stopPropagation(); onDelete(agent); }}
             className="p-1.5 rounded-lg hover:bg-error/10 text-text-secondary hover:text-error transition-all"><Trash2 size={12} /></button>}
         </div>
@@ -287,6 +296,7 @@ function AgentCard({ agent, isBase, onEdit, onDelete, onDuplicate, selected, onC
 
 // ── Agent Detail Panel ───────────────────────────────────────────────────────
 function AgentDetail({ agent, onEdit, onDelete, onDuplicate, isBase }) {
+  const { tier: userTier } = useAuthStore();
   if (!agent) return (
     <div className="h-full flex flex-col items-center justify-center text-center p-12 opacity-30">
       <Bot size={48} className="mb-4" />
@@ -381,9 +391,11 @@ function AgentDetail({ agent, onEdit, onDelete, onDuplicate, isBase }) {
 
       {/* Footer actions */}
       <div className="p-6 border-t border-white/5 flex flex-wrap gap-3">
-        <Button variant="ghost" size="sm" onClick={() => onDuplicate(agent)} className="flex-1 min-w-[120px] rounded-xl border border-white/10">
-          <Copy size={14} className="mr-2" /> Duplicate
-        </Button>
+        {userTier > 0 && (
+          <Button variant="ghost" size="sm" onClick={() => onDuplicate(agent)} className="flex-1 min-w-[120px] rounded-xl border border-white/10">
+            <Copy size={14} className="mr-2" /> Duplicate
+          </Button>
+        )}
         {!isBase && (
           <Button variant="ghost" size="sm" onClick={() => onDelete(agent)} className="border border-error/20 text-error hover:bg-error/10 rounded-xl px-4">
             <Trash2 size={14} />
@@ -410,7 +422,8 @@ function AgentDetail({ agent, onEdit, onDelete, onDuplicate, isBase }) {
 // ── Main Page ────────────────────────────────────────────────────────────────
 function Agents() {
   const navigate = useNavigate();
-  const { organizationId } = useAuthStore();
+  const { organizationId, tier: userTier, capabilities } = useAuthStore();
+  const { maxSpecialistAgents = 0 } = capabilities || {};
   const { confirmDialog, ConfirmDialogComponent } = useConfirmDialog();
   const [tab, setTab] = useState("mine"); // "mine" | "base"
   const [myAgents, setMyAgents] = useState([]);
@@ -488,10 +501,19 @@ function Agents() {
             </button>
           ))}
         </div>
-        <Button variant="primary" size="sm" className="rounded-full shadow-neon-primary px-6 mb-2"
-          onClick={() => setModal("create")}>
-          <Plus size={16} className="mr-2" /> New Agent
-        </Button>
+        {userTier === 0 ? (
+          <Badge variant="warning" className="mb-2 text-[10px] px-4 font-bold tracking-widest uppercase">
+            Upgrade to create Agents
+          </Badge>
+        ) : (
+          <Button variant="primary" size="sm" className="rounded-full shadow-neon-primary px-6 mb-2"
+            onClick={() => setModal("create")}
+            disabled={myAgents.length >= maxSpecialistAgents && maxSpecialistAgents !== -1}
+          >
+            <Plus size={16} className="mr-2" /> 
+            {myAgents.length >= maxSpecialistAgents && maxSpecialistAgents !== -1 ? "Limit Reached" : "New Agent"}
+          </Button>
+        )}
       </div>
 
       {/* Main content: grid left + detail right */}

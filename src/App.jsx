@@ -8,13 +8,26 @@ import OfflineIndicator from "./components/ui/OfflineIndicator";
 import { GlassCard } from "./components/ui/GlassCard";
 import { Button } from "./components/ui/Button";
 import { Lock } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Toaster } from "react-hot-toast";
+
+const LoadingOverlay = () => (
+  <div className="flex-1 flex flex-col items-center justify-center bg-background animate-in fade-in duration-700">
+    <div className="relative w-24 h-24 mb-10">
+      <div className="absolute inset-0 border-4 border-primary/5 rounded-[2rem]" />
+      <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-[2rem] animate-spin shadow-neon-primary" />
+    </div>
+    <div className="text-center space-y-2">
+      <p className="text-[11px] font-black uppercase tracking-[0.4em] text-text-primary">Synchronizing Cluster</p>
+      <p className="text-[9px] font-black text-text-secondary/40 uppercase tracking-[0.2em]">Operational Handshake in Progress</p>
+    </div>
+  </div>
+);
 
 const Footer = () => (
   <footer className="relative z-10 border-t border-border-glow bg-surface py-8 mt-20">
     <div className="max-w-[1400px] mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-      <div className="font-display font-bold text-xl tracking-tighter italic text-white/50 hover:text-white transition-colors">SINUX</div>
+      <div className="font-display font-bold text-xl tracking-tighter italic text-text-primary/50 hover:text-text-primary transition-colors">SINUX</div>
       <p className="text-tech text-text-secondary">
         &copy; {new Date().getFullYear()} Sinux. ZERO COMPROMISE.
       </p>
@@ -27,9 +40,24 @@ function App() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   
   // Exempt public pages and the wallet page from the global lockdown
-  const publicPaths = ["/", "/pricing", "/support", "/auth", "/wallet"];
+  const publicPaths = ["/", "/pricing", "/support", "/auth", "/wallet", "/coming-soon"];
   const isPublicPage = publicPaths.includes(location.pathname);
   const isLocked = isLockedStore && !isPublicPage;
+
+  const preferences = useAuthStore((state) => state.preferences);
+
+  useEffect(() => {
+    const theme = preferences?.theme || "dark";
+    const root = document.documentElement;
+    root.classList.remove("light", "dark");
+    
+    if (theme === "system") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      root.classList.add(systemTheme);
+    } else {
+      root.classList.add(theme);
+    }
+  }, [preferences?.theme]);
 
   return (
     <div className="h-screen w-full bg-background text-text-primary flex overflow-hidden">
@@ -52,8 +80,10 @@ function App() {
       <Navbar /> 
 
       <main className={`flex-1 relative flex flex-col min-w-0 transition-all duration-500 ${isLocked ? 'blur-md grayscale pointer-events-none' : ''}`}>
-        <div className="flex-1 overflow-y-auto pb-20 md:pb-0">
-          <Outlet />
+        <div className="flex-1 overflow-y-auto pb-20 md:pb-0 flex flex-col">
+          <Suspense fallback={<LoadingOverlay />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
 

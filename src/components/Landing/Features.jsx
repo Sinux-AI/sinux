@@ -1,4 +1,5 @@
 import React from "react";
+import { motion } from "framer-motion";
 import {
   Terminal,
   Activity,
@@ -12,6 +13,8 @@ import {
   Briefcase,
   FlaskConical,
   Users,
+  Box,
+  Fingerprint
 } from "lucide-react";
 import { GlassCard } from "../ui/GlassCard";
 import { Badge } from "../ui/Badge";
@@ -21,6 +24,28 @@ import { useAuthStore } from "../../authentication/authStore";
 import { useConfirmDialog } from "../ui/ConfirmDialog";
 import { purchaseTierAsync, initializeTopUpAsync } from "../../services/walletService";
 import { toast } from "react-hot-toast";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 40, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.8,
+      ease: [0.25, 1, 0.5, 1],
+    },
+  },
+};
 
 export const Features = () => {
   const { userId, organizationId, walletBalance, tier: currentTier } = useAuthStore();
@@ -36,7 +61,9 @@ export const Features = () => {
 
     if (level === currentTier) return;
     
-    const zarPrice = parseFloat(priceStr.replace(/[^0-9.]/g, ''));
+    const zarPrice = typeof priceStr === 'number' 
+      ? priceStr 
+      : parseFloat((priceStr || "0").toString().replace(/[^0-9.]/g, ''));
     if (walletBalance >= zarPrice) {
       const ok = await confirmDialog({
         title: `Upgrade to ${name}`,
@@ -68,302 +95,270 @@ export const Features = () => {
       }
     }
   };
+
   return (
-    <>
-      {/* === SECTION 1: HOW CONNECTIVITY WORKS === */}
-      <section className="grid grid-cols-1 md:grid-cols-12 gap-6 relative z-10 mb-20 animate-in fade-in duration-1000 delay-300 slide-in-from-bottom-12">
-        {/* STRATEGIC CONNECTIVITY - MAIN CARD */}
-        <GlassCard interactive className="md:col-span-8 min-h-[460px] flex flex-col p-10 group overflow-hidden">
-          <div className="absolute -bottom-1/2 -right-1/4 w-[600px] h-[600px] bg-primary/20 blur-[100px] rounded-full pointer-events-none group-hover:bg-primary/30 transition-colors duration-700" />
-          
-          <div className="flex justify-between items-start mb-16 relative z-10">
-            <div>
-              <div className="flex items-center gap-3 text-primary mb-6">
-                <Terminal size={20} className="shadow-neon-primary" />
-                <span className="text-tech tracking-[0.3em] text-primary">
-                  STRATEGIC CONNECTIVITY
-                </span>
-              </div>
-              <h3 className="text-4xl md:text-6xl text-insane text-white mix-blend-screen drop-shadow-xl group-hover:glow-text-primary transition-all">
-                Auto-Build <br />Business Tools
-              </h3>
-            </div>
-            <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center bg-white/5 backdrop-blur-md group-hover:border-primary group-hover:bg-primary group-hover:scale-110 transition-all duration-500 shadow-glass-inner">
-              <ArrowUpRight
-                className="text-white group-hover:text-black transition-colors"
-                size={28}
-                strokeWidth={2.5}
-              />
-            </div>
-          </div>
+    <div className="space-y-40 pb-40">
+      {ConfirmDialogComponent}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-auto relative z-10">
-            <p className="text-text-secondary text-base lg:text-lg leading-relaxed font-sans max-w-sm">
-              Connect your entire tech stack effortlessly. Sinux ingests API 
-              documentation and protocols to build production-grade tools for 
-              your agent workforce automatically.
-            </p>
-            
-            {/* Visual Terminal Element */}
-            <div className="bg-[#030305]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 font-tech text-sm space-y-3 relative shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-              <div className="flex gap-2 mb-6">
-                <div className="w-3 h-3 rounded-full bg-secondary/80" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
-                <div className="w-3 h-3 rounded-full bg-primary/80 shadow-neon-primary" />
-              </div>
-              <p className="text-text-secondary"># Integrating Business CRM docs...</p>
-              <p className="text-primary drop-shadow-[0_0_8px_rgba(157,78,221,0.6)]">{`> Extracted: POST /leads/sync`}</p>
-              <p className="text-text-secondary italic">{`// Mapping business logic...`}</p>
-              <p className="text-success">{`✓ Strategic tool registered to Agent "Atlas"`}</p>
-              <div className="absolute bottom-6 right-6 animate-pulse w-3 h-6 bg-primary" />
-            </div>
-          </div>
-        </GlassCard>
+      {/* === ARCHITECTURE SECTION === */}
+      <motion.section 
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={containerVariants}
+        className="grid grid-cols-1 md:grid-cols-12 gap-8 relative z-10"
+      >
+        {/* Main Connectivity Card */}
+        <motion.div variants={itemVariants} className="md:col-span-8 h-full">
+           <GlassCard interactive className="h-full flex flex-col p-12 md:p-16 group overflow-hidden bg-surface rounded-[4rem] border-border-glow shadow-sm active:scale-[0.99] transition-all duration-700">
+             <div className="absolute -bottom-1/4 -right-1/4 w-[500px] h-[500px] bg-primary/5 blur-[100px] rounded-full pointer-events-none group-hover:bg-primary/10 transition-colors duration-1000" />
+             
+             <div className="flex justify-between items-start mb-16 relative z-10">
+               <div className="space-y-6">
+                 <div className="flex items-center gap-4 text-primary">
+                   <Terminal size={22} className="shadow-neon-primary" />
+                   <span className="text-[10px] font-black tracking-[0.4em] uppercase">
+                     Strategic Connectivity
+                   </span>
+                 </div>
+                 <h3 className="text-5xl md:text-7xl font-black text-text-primary uppercase leading-none tracking-tighter">
+                   Auto-Build <br />
+                   <span className="text-text-secondary/20 group-hover:text-primary transition-colors duration-700">Business Tools</span>
+                 </h3>
+               </div>
+               <div className="w-20 h-20 rounded-3xl border border-border-glow flex items-center justify-center bg-surface-raised transition-all duration-700 group-hover:bg-primary group-hover:border-primary group-hover:scale-110 shadow-sm">
+                 <ArrowUpRight
+                   className="text-text-secondary/40 group-hover:text-white transition-colors"
+                   size={32}
+                   strokeWidth={2.5}
+                 />
+               </div>
+             </div>
 
-        {/* METRICS */}
-        <div className="md:col-span-4 grid grid-rows-2 gap-6">
-          <GlassCard interactive className="p-8 flex flex-col justify-between group">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent p-8 flex flex-col justify-between rounded-[2rem]">
-              <Activity
-                className="text-text-secondary group-hover:text-accent group-hover:drop-shadow-[0_0_12px_rgba(0,240,255,0.8)] transition-all duration-500"
-                size={32}
-              />
-              <div>
-                <p className="text-5xl md:text-7xl font-sans font-black italic tracking-tighter text-white group-hover:text-accent transition-colors drop-shadow-lg">
-                  140<span className="text-3xl font-light">ms</span>
-                </p>
-                <p className="text-tech text-text-secondary mt-2 group-hover:text-white transition-colors">REAL-TIME INFERENCE</p>
-              </div>
-            </div>
-          </GlassCard>
-          
-          <GlassCard interactive className="p-8 flex flex-col justify-between group overflow-hidden">
-             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-secondary to-accent opacity-50 group-hover:opacity-100 transition-opacity" />
-            <Cpu className="text-secondary group-hover:drop-shadow-[0_0_12px_rgba(255,0,85,0.8)] transition-all duration-500" size={32} />
-            <div>
-              <h4 className="text-2xl lg:text-3xl text-insane text-white group-hover:glow-text-primary transition-all">Intelligence Agnostic</h4>
-              <p className="text-tech text-secondary mt-3 shadow-neon-pink">Premium Workforce Hub</p>
-            </div>
-          </GlassCard>
-        </div>
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mt-auto relative z-10 items-end">
+               <p className="text-text-secondary/60 text-lg md:text-xl font-medium leading-relaxed tracking-tight max-w-sm">
+                 Connect your entire tech stack effortlessly. Sinux ingests API 
+                 documentation and protocols to build production-grade tools for 
+                 your agent workforce automatically.
+               </p>
+               
+               {/* Minimal Terminal Mockup */}
+               <div className="bg-surface-raised/80 backdrop-blur-3xl border border-border-glow rounded-[2rem] p-8 font-mono text-xs space-y-4 relative shadow-[0_20px_60px_rgba(0,0,0,0.03)] overflow-hidden">
+                 <div className="flex gap-2.5 mb-8">
+                   <div className="w-2.5 h-2.5 rounded-full bg-text-primary/5" />
+                   <div className="w-2.5 h-2.5 rounded-full bg-text-primary/5" />
+                   <div className="w-2.5 h-2.5 rounded-full bg-primary/20 shadow-neon-primary" />
+                 </div>
+                 <p className="text-text-secondary/40"># Syncing API documentation...</p>
+                 <p className="text-text-primary font-bold">{`> Found: POST /leads/sync`}</p>
+                 <p className="text-primary/60 italic font-medium">{`// Synthesizing tool map...`}</p>
+                 <p className="text-success font-black text-[9px] uppercase tracking-widest">{`✓ Strategy registered`}</p>
+                 <div className="absolute bottom-8 right-8 animate-pulse w-4 h-1.5 bg-primary/40" />
+               </div>
+             </div>
+           </GlassCard>
+        </motion.div>
 
-        {/* FEATURE CARDS ROW */}
-        <GlassCard interactive className="md:col-span-4 p-8 group flex flex-col overflow-hidden border-border-glow hover:bg-white hover:border-white transition-all duration-700">
-          <div className="flex justify-between items-start mb-auto z-10">
-            <Layers
-              size={32}
-              className="text-white group-hover:text-black transition-colors duration-500"
-            />
-            <ArrowUpRight
-              size={24}
-              className="text-white/20 group-hover:text-primary transition-colors duration-500"
-            />
-          </div>
-          <div className="mt-12 z-10 relative">
-            <h4 className="text-2xl text-insane text-white group-hover:text-black transition-colors duration-500">
-              Agent Workforce
-            </h4>
-            <p className="text-sm mt-3 text-text-secondary group-hover:text-black/60 font-medium transition-colors duration-500">
-              Deploy specialized agents with deep domain expertise, custom memory, and secure knowledge bases.
-            </p>
-          </div>
-        </GlassCard>
-
-        <GlassCard interactive className="md:col-span-4 p-8 flex flex-col justify-between group overflow-hidden">
-          <Shield size={32} className="text-white/30 group-hover:text-white transition-colors" />
-          <div className="mt-12">
-            <h4 className="text-2xl text-insane text-white group-hover:glow-text-accent transition-all">Secure Knowledge</h4>
-            <p className="text-sm font-sans text-text-secondary mt-3 group-hover:text-white/80 transition-colors">
-              Proprietary RAG engine for secure indexing of documents, policies, and internal workflows.
-            </p>
-          </div>
-        </GlassCard>
-
-        <GlassCard interactive className="md:col-span-4 p-8 flex flex-col justify-between group overflow-hidden">
-           <Globe size={32} className="text-white/30 group-hover:text-white transition-colors" />
-          <div className="mt-12">
-            <h4 className="text-2xl text-insane text-white group-hover:glow-text-primary transition-all">Global Delivery</h4>
-            <p className="text-sm font-sans text-text-secondary mt-3 group-hover:text-white/80 transition-colors">
-              Deploy across Slack, Discord, or your internal infrastructure with unified security protocols.
-            </p>
-          </div>
-        </GlassCard>
-      </section>
-
-
-      {/* === SECTION 2: BUSINESS SOLUTIONS === */}
-      <section id="services" className="relative z-10 mb-24">
-        <div className="text-center mb-16">
-          <span className="text-tech text-primary tracking-[0.3em] text-xs font-bold mb-4 block">
-            STRATEGIC IMPACT
-          </span>
-          <h2 className="text-4xl md:text-5xl text-insane text-white mb-4">
-            Organization Solutions
-          </h2>
-          <p className="text-text-secondary font-sans text-lg max-w-2xl mx-auto">
-            Sinux scales with your organization, providing specialized AI workforce 
-            solutions across critical departments.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            {
-              icon: <Briefcase size={28} className="text-primary" />,
-              title: "Legal Operations",
-              desc: "Automate contract analysis and document discovery with specialists trained on legal precedents and corporate policy.",
-            },
-            {
-              icon: <Code2 size={28} className="text-accent" />,
-              title: "Digital Engineering",
-              desc: "Accelerate development cycles with autonomous coding agents that integrate directly with your CI/CD pipelines.",
-            },
-            {
-              icon: <FlaskConical size={28} className="text-secondary" />,
-              title: "R&D Intelligence",
-              desc: "Synthesize research, analyze market trends, and generate strategic reports with agents tied to your proprietary data.",
-            },
-            {
-              icon: <Shield size={28} className="text-success" />,
-              title: "Compliance & Risk",
-              desc: "Maintain watertight security with automated audit agents that monitor communications and enforce legal guardrails.",
-            },
-          ].map((item) => (
-            <GlassCard key={item.title} interactive className="p-8 flex flex-col group">
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/5 w-max mb-8 group-hover:scale-110 transition-transform">
-                {item.icon}
-              </div>
-              <h4 className="text-xl text-insane text-white mb-3 group-hover:text-primary transition-colors">{item.title}</h4>
-              <p className="text-text-secondary text-sm font-sans leading-relaxed">{item.desc}</p>
+        {/* Latency & Agnostic Cards */}
+        <div className="md:col-span-4 grid grid-cols-1 gap-8">
+          <motion.div variants={itemVariants} className="h-full">
+            <GlassCard interactive className="h-full p-10 flex flex-col justify-between group bg-surface border-border-glow rounded-[3.5rem] shadow-sm overflow-hidden active:scale-[0.98]">
+               <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent pointer-events-none" />
+               <Activity className="text-text-secondary/20 group-hover:text-primary transition-all duration-700" size={32} />
+               <div className="relative z-10">
+                 <p className="text-6xl md:text-8xl font-black tracking-[-0.05em] text-text-primary leading-none">
+                   140<span className="text-2xl md:text-4xl text-text-secondary/20 font-light lowercase">ms</span>
+                 </p>
+                 <p className="text-[10px] font-black text-text-secondary/40 uppercase tracking-[0.3em] mt-4">Real-Time Synthesis</p>
+               </div>
             </GlassCard>
-          ))}
+          </motion.div>
+          
+          <motion.div variants={itemVariants} className="h-full">
+            <GlassCard interactive className="h-full p-10 flex flex-col justify-between group bg-surface border-border-glow rounded-[3.5rem] shadow-sm overflow-hidden active:scale-[0.98]">
+              <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Cpu className="text-text-secondary/20 group-hover:text-primary transition-all duration-700" size={32} />
+              <div className="relative z-10">
+                <h4 className="text-2xl font-black text-text-primary uppercase tracking-tighter leading-none mb-1">Intelligence Agnostic</h4>
+                <p className="text-[10px] font-black text-text-secondary/40 uppercase tracking-[0.2em]">Universal Model Gateway</p>
+              </div>
+            </GlassCard>
+          </motion.div>
         </div>
-      </section>
 
+        {/* Capability Triad */}
+        {[
+          { icon: Layers, title: "Specialist Clusters", desc: "Deploy domain-specific specialists with custom memory and neural knowledge bases." },
+          { icon: Shield, title: "Identity Vault", desc: "Biometric security for agent actions with fine-grained legal and compliance guardrails." },
+          { icon: Globe, title: "Omni-Channel", desc: "Native delivery across Slack, Discord, or internal apps with zero-latency synchronization." }
+        ].map((feat, i) => (
+          <motion.div key={i} variants={itemVariants} className="md:col-span-4 h-full">
+            <GlassCard interactive className="h-full p-12 group bg-surface border-border-glow rounded-[4rem] shadow-sm flex flex-col active:scale-[0.98]">
+              <div className="mb-14 p-4 bg-text-primary/[0.03] rounded-3xl w-max group-hover:bg-primary group-hover:text-white transition-all duration-700 border border-border-glow group-hover:border-primary shadow-sm active:scale-95">
+                 <feat.icon size={28} strokeWidth={1.5} />
+              </div>
+              <div className="space-y-4">
+                <h4 className="text-2xl font-black text-text-primary uppercase tracking-tighter leading-none group-hover:text-primary transition-colors">{feat.title}</h4>
+                <p className="text-[14px] text-text-secondary/60 font-medium leading-relaxed tracking-tight">{feat.desc}</p>
+              </div>
+            </GlassCard>
+          </motion.div>
+        ))}
+      </motion.section>
 
-      {/* === SECTION 3: PRICING === */}
-      <section id="pricing" className="relative z-10 mb-24">
-        {ConfirmDialogComponent}
-        <div className="text-center mb-16">
-          <span className="text-tech text-secondary tracking-[0.3em] text-xs font-bold mb-4 block">
-            TRANSPARENT PRICING
+      {/* === PRICING SECTION === */}
+      <motion.section 
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={containerVariants}
+        id="pricing" 
+        className="relative z-10"
+      >
+        <div className="text-center mb-24 space-y-4">
+          <span className="text-[10px] font-black text-primary tracking-[0.4em] uppercase">
+            Economic Architecture
           </span>
-          <h2 className="text-4xl md:text-5xl text-insane text-white mb-4">
-            Start Basic. Scale As You Go.
+          <h2 className="text-5xl md:text-7xl font-black text-text-primary uppercase tracking-tighter leading-none">
+            Scale Without <br className="hidden md:block" /> <span className="text-text-secondary/20 italic">Boundaries.</span>
           </h2>
-          <p className="text-text-secondary font-sans text-lg max-w-2xl mx-auto">
-            No subscriptions required for agents. Pay only for what your agents consume.
-          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl mx-auto">
           {/* Basic Tier */}
-          <GlassCard interactive className="p-10 flex flex-col group">
-            <Badge variant="neutral" className="w-max mb-6">BASIC</Badge>
-            <h3 className="text-3xl text-insane text-white mb-2">Basic</h3>
-            <p className="text-text-secondary font-sans text-sm mb-8">Lightest models, pay only for what you use.</p>
-            <ul className="space-y-4 mb-10 flex-1">
-              {[
-                "Up to 3 agents",
-                "Gemini & HuggingFace models",
-                "100 requests / month",
-                "Basic configuration",
-                "Community support",
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-sm font-sans text-text-secondary">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <Button 
-              variant="ghost" 
-              className="w-full border border-white/10 hover:border-primary/40"
-              disabled={isProcessing || (userId && currentTier === 0)}
-              onClick={() => handleUpgrade("Basic", 0, "0")}
-            >
-              {userId && currentTier === 0 ? "Current Plan" : "Get Started"}
-            </Button>
-          </GlassCard>
+          <motion.div variants={itemVariants}>
+            <GlassCard interactive className="p-16 flex flex-col bg-surface border-border-glow rounded-[4.5rem] shadow-sm active:scale-[0.99] group h-full">
+              <Badge variant="ghost" className="w-max mb-10 border-border-glow bg-surface-raised px-5 py-2 text-[9px] font-black uppercase tracking-widest text-text-secondary/40">Node Tier 0</Badge>
+              <div className="mb-12">
+                 <h3 className="text-4xl font-black text-text-primary uppercase tracking-tighter leading-none mb-4">Basic Access</h3>
+                 <p className="text-text-secondary/60 font-medium tracking-tight">Standard cognitive nodes with pay-as-you-go credit allocation.</p>
+              </div>
+              <ul className="space-y-5 mb-16 flex-1">
+                {[
+                  "3 Specialized Instances",
+                  "Standard Intelligence Nodes",
+                  "100 Manual Dispatches / mo",
+                  "Basic Logic Config",
+                  "Community Protocol Support",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-6 text-[13px] font-semibold text-text-secondary tracking-tight group-hover:text-text-primary transition-colors">
+                    <div className="w-2.5 h-2.5 rounded-full border border-primary/40 group-hover:bg-primary transition-all" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/pricing" className="w-full">
+                <Button 
+                  variant="ghost" 
+                  className="w-full h-16 rounded-[2rem] border border-border-glow text-[11px] font-black uppercase tracking-[0.3em] hover:bg-surface-raised transition-all active:scale-95"
+                  disabled={isProcessing || (userId && currentTier === 0)}
+                >
+                  {userId && currentTier === 0 ? "Current Priority" : "Provision Node"}
+                </Button>
+              </Link>
+            </GlassCard>
+          </motion.div>
 
           {/* Pro Tier */}
-          <GlassCard interactive className="p-10 flex flex-col group border-primary/20 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-            <Badge variant="success" className="w-max mb-6 relative z-10">PAY AS YOU GO</Badge>
-            <h3 className="text-3xl text-insane text-white mb-2 relative z-10">Professional</h3>
-            <p className="text-text-secondary font-sans text-sm mb-8 relative z-10">For teams and production workloads.</p>
-            <ul className="space-y-4 mb-10 flex-1 relative z-10">
-              {[
-                "Unlimited agents",
-                "All models (GPT-4, Groq, Gemini Pro, Ollama)",
-                "Auto API Integration engine",
-                "Advanced analytics & usage tracking",
-                "Deploy as API, bot, or widget",
-                "Priority inference routing",
-                "RAG with unlimited knowledge bases",
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-sm font-sans text-text-secondary">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <Button 
-              variant="primary" 
-              className="w-full shadow-neon-primary relative z-10"
-              disabled={isProcessing || (userId && currentTier >= 1)}
-              onClick={() => handleUpgrade("Professional", 1, "250")}
-            >
-              {userId && currentTier >= 1 ? "Current Plan" : "Start Building"}
-            </Button>
-          </GlassCard>
+          <motion.div variants={itemVariants}>
+            <GlassCard interactive className="p-16 flex flex-col bg-surface border-primary/20 rounded-[4.5rem] shadow-sm active:scale-[0.99] group h-full relative overflow-hidden isolate">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] rounded-full -z-10 group-hover:bg-primary/10 transition-all duration-1000" />
+              <Badge variant="primary" className="w-max mb-10 px-6 py-2 text-[9px] font-black uppercase tracking-[0.3em] shadow-neon-primary">Enterprise Link</Badge>
+              <div className="mb-12">
+                 <h3 className="text-4xl font-black text-text-primary uppercase tracking-tighter leading-none mb-4 group-hover:text-primary transition-colors">Professional</h3>
+                 <p className="text-text-secondary/60 font-medium tracking-tight">Full autonomous orchestration for production-grade workforce logic.</p>
+              </div>
+              <ul className="space-y-5 mb-16 flex-1">
+                {[
+                  "Unlimited Autonomous Agents",
+                  "Advanced Cognition (GPT-4+, Claude)",
+                  "Auto API Integration Hub",
+                  "Global Telemetry & Analytics",
+                  "Native REST/Webhook Gateway",
+                  "High-Priority Routing Tier",
+                  "Proprietary RAG Knowledge",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-6 text-[13px] font-semibold text-text-secondary tracking-tight group-hover:text-text-primary transition-colors">
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-neon-primary" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/pricing" className="w-full">
+                <Button 
+                  variant="primary" 
+                  className="w-full h-16 rounded-[2rem] shadow-neon-primary text-[11px] font-black uppercase tracking-[0.3em] hover:scale-[1.02] active:scale-95 transition-all"
+                  disabled={isProcessing || (userId && currentTier >= 1)}
+                >
+                  {userId && currentTier >= 1 ? "Priority Active" : "Initialize Uplink"}
+                </Button>
+              </Link>
+            </GlassCard>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* === SECTION 4: DEVELOPER API === */}
-      <section className="relative z-10 mb-20">
-        <GlassCard interactive className="p-10 md:p-16 flex flex-col md:flex-row items-center gap-12 group overflow-hidden">
-          <div className="absolute -bottom-1/3 -left-1/4 w-[500px] h-[500px] bg-accent/10 blur-[120px] rounded-full pointer-events-none" />
-          <div className="flex-1 relative z-10">
-            <div className="flex items-center gap-3 mb-6">
-              <Code2 size={20} className="text-accent" />
-              <span className="text-tech text-accent tracking-[0.3em] text-xs font-bold">
-                DEVELOPER API
-              </span>
+      {/* === DEVELOPER SECTION === */}
+      <motion.section 
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={containerVariants}
+        className="relative z-10"
+      >
+        <GlassCard interactive className="p-16 md:p-24 flex flex-col md:flex-row items-center gap-20 group overflow-hidden bg-surface rounded-[5rem] border-border-glow shadow-sm active:scale-[0.99] transition-all duration-1000">
+          <div className="absolute -bottom-1/4 -right-1/4 w-[600px] h-[600px] bg-primary/[0.02] blur-[120px] rounded-full pointer-events-none" />
+          <motion.div variants={itemVariants} className="flex-1 space-y-10">
+            <div className="space-y-6">
+              <div className="flex items-center gap-4 text-primary">
+                <Code2 size={24} strokeWidth={1.5} />
+                <span className="text-[10px] font-black tracking-[0.5em] uppercase">Neural SDK / Gateway</span>
+              </div>
+              <h3 className="text-5xl md:text-7xl font-black text-text-primary uppercase tracking-tighter leading-none group-hover:text-primary transition-colors">
+                Your Logic, <br /> Our Infrastructure.
+              </h3>
+              <p className="text-text-secondary/60 text-lg md:text-xl font-medium leading-relaxed tracking-tight max-w-lg mb-10">
+                Register your applications, generate secure biometric keys, and 
+                synchronize any Sinux specialist via our unified REST gateway. 
+                Full model control in every call.
+              </p>
             </div>
-            <h3 className="text-3xl md:text-5xl text-insane text-white mb-4 group-hover:glow-text-accent transition-all">
-              Your Agents, Your API
-            </h3>
-            <p className="text-text-secondary font-sans text-base md:text-lg leading-relaxed max-w-lg mb-8">
-              Register your app, get an API key, and call any Sinux agent via REST.
-              Configure model, context, and parameters dynamically per request —
-              like OpenAI's API, but with multiple models and custom agent configs.
-            </p>
             <Link to={"/dashboard/api"}>
-              <Button variant="ghost" className="border border-accent/30 hover:border-accent/60 text-accent hover:text-white">
-                View API Docs <ArrowUpRight size={16} className="ml-2" />
+              <Button variant="ghost" className="h-16 rounded-2xl px-12 border border-border-glow text-[11px] font-black uppercase tracking-[0.3em] hover:bg-surface-raised transition-all active:scale-95">
+                API Protocol Docs <ArrowUpRight size={18} className="ml-4 opacity-40" />
               </Button>
             </Link>
-          </div>
+          </motion.div>
           
-          <div className="w-full md:w-auto md:min-w-[340px] bg-[#030305]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 font-tech text-sm space-y-2 relative shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-            <div className="flex gap-2 mb-4">
-              <div className="w-3 h-3 rounded-full bg-secondary/80" />
-              <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
-              <div className="w-3 h-3 rounded-full bg-accent/80" />
-            </div>
-            <p className="text-accent">{`POST /v1/agents/atlas/chat`}</p>
-            <p className="text-text-secondary">{`Authorization: Bearer sk-sinux-...`}</p>
-            <p className="text-text-secondary/50 mt-2">{`{`}</p>
-            <p className="text-white/70 pl-4">{`"message": "Summarize Q4 earnings",`}</p>
-            <p className="text-white/70 pl-4">{`"model": "gemini-1.5-pro",`}</p>
-            <p className="text-white/70 pl-4">{`"temperature": 0.3`}</p>
-            <p className="text-text-secondary/50">{`}`}</p>
-          </div>
+          <motion.div variants={itemVariants} className="w-full md:w-auto md:min-w-[440px]">
+             <div className="bg-surface-raised/80 backdrop-blur-3xl border border-border-glow rounded-[3rem] p-10 font-mono text-sm space-y-4 shadow-[0_40px_100px_rgba(0,0,0,0.04)] relative overflow-hidden group/code active:scale-[0.98] transition-all duration-700">
+               <div className="absolute inset-0 bg-noise opacity-[0.02] pointer-events-none" />
+               <div className="flex gap-2.5 mb-10">
+                 <div className="w-2.5 h-2.5 rounded-full bg-text-primary/5" />
+                 <div className="w-2.5 h-2.5 rounded-full bg-text-primary/5" />
+                 <div className="w-2.5 h-2.5 rounded-full bg-primary/20" />
+               </div>
+               <div className="space-y-6">
+                 <div>
+                   <p className="text-primary font-bold">POST <span className="text-text-primary">/v1/gateway/atlas/chat</span></p>
+                   <p className="text-text-secondary/40 text-[11px]">Authorization: Bearer sk_live_839...</p>
+                 </div>
+                 <div className="space-y-1.5 opacity-60 group-hover/code:opacity-100 transition-opacity">
+                   <p className="text-text-secondary">{`{`}</p>
+                   <p className="text-text-primary pl-6">{`"directive": "Analyze Q4 P&L Dashboard",`}</p>
+                   <p className="text-text-primary pl-6">{`"synthesis_engine": "gpt-4o",`}</p>
+                   <p className="text-text-primary pl-6">{`"latency_tier": "priority"`}</p>
+                   <p className="text-text-secondary">{`}`}</p>
+                 </div>
+               </div>
+               <div className="absolute bottom-10 right-10 flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-success shadow-neon-success animate-pulse" />
+                  <span className="text-[8px] font-black text-text-secondary/30 uppercase tracking-[0.3em]">Gateway Ready</span>
+               </div>
+             </div>
+          </motion.div>
         </GlassCard>
-      </section>
-    </>
+      </motion.section>
+    </div>
   );
 };

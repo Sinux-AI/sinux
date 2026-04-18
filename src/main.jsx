@@ -5,26 +5,31 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
 
 import App from "./App";
-import Home from "./pages/Home";
-import Agents from "./pages/Agents";
-import Chat from "./pages/Chat";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Models from "./pages/Models";
-import Workflows from "./pages/Workflows";
-import Integrations from "./pages/Integrations";
-import WalletPage from "./pages/Wallet";
-import Pricing from "./pages/Pricing";
-import Knowledge from "./pages/Knowledge";
-import Orchestration from "./pages/Orchestration";
-import CreateOrg from "./pages/CreateOrg";
-import AcceptInvite from "./pages/AcceptInvite";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-import Support from "./pages/Support";
+import { lazy } from "react";
+
+const Home = lazy(() => import("./pages/Home"));
+const Agents = lazy(() => import("./pages/Agents"));
+const Chat = lazy(() => import("./pages/Chat"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Models = lazy(() => import("./pages/Models"));
+const Workflows = lazy(() => import("./pages/Workflows"));
+const Integrations = lazy(() => import("./pages/Integrations"));
+const WalletPage = lazy(() => import("./pages/Wallet"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const Knowledge = lazy(() => import("./pages/Knowledge"));
+const Orchestration = lazy(() => import("./pages/Orchestration"));
+const CreateOrg = lazy(() => import("./pages/CreateOrg"));
+const AcceptInvite = lazy(() => import("./pages/AcceptInvite"));
+const Settings = lazy(() => import("./pages/Settings"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Support = lazy(() => import("./pages/Support"));
+const ComingSoon = lazy(() => import("./pages/ComingSoon"));
 
 import ProtectedRoute from "./authentication/ProtectedRoute";
 import AuthSynchronizer from "./authentication/AuthSynchronizer";
+import BootstrapSynchronizer from "./components/BootstrapSynchronizer";
+import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 
 /* ---------------- Route Guard Helper ---------------- */
 
@@ -45,6 +50,7 @@ const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: "auth", Component: Auth },
       { path: "pricing", Component: Pricing },
+      { path: "coming-soon", Component: ComingSoon },
       { path: "accept-invite", Component: AcceptInvite },
 
       // PROTECTED
@@ -74,6 +80,7 @@ function Root() {
     <>
       {/* Runs once globally */}
       <AuthSynchronizer onOfflineChange={setIsOffline} />
+      <BootstrapSynchronizer />
 
       {/* Router stays public-aware */}
       <RouterProvider router={router} />
@@ -83,6 +90,8 @@ function Root() {
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <Root />
+    <ErrorBoundary>
+      <Root />
+    </ErrorBoundary>
   </React.StrictMode>
 );

@@ -10,7 +10,6 @@ export const GenAIChatAsync = async ({
   model = 0,
   chatLogId = null,
   connectionId,
-  agentProfileId = null,
   organizationId = null,
   personality = 0,
 }) => {
@@ -19,11 +18,48 @@ export const GenAIChatAsync = async ({
     model,
     chatLogId,
     connectionId,
-    agentProfileId,
     organizationId,
     personality,
   });
 
+  return response.data;
+};
+export const getChatLogsAsync = async (page = 1, limit = 20) => {
+  const response = await sinuxApi.get(`/chat/logs?page=${page}&limit=${limit}`);
+  return response.data;
+};
 
+export const createChatLogAsync = async (title) => {
+  const response = await sinuxApi.post("/chat/logs", { title });
+  return response.data;
+};
+
+export const getPinnedChatLogsAsync = async () => {
+  const response = await sinuxApi.get("/chat/logs/pinned");
+  return response.data;
+};
+
+export const getChatLogByIdAsync = async (chatLogId) => {
+  const response = await sinuxApi.get(`/chat/logs/${chatLogId}`);
+  return response.data;
+};
+
+export const renameChatLogAsync = async (chatLogId, title) => {
+  const response = await sinuxApi.put(`/chat/logs/${chatLogId}`, { title });
+  return response.data;
+};
+
+export const getChatLogMessagesAsync = async (chatLogId, skip = 0, limit = 50) => {
+  const response = await sinuxApi.get(`/chat/logs/${chatLogId}/messages?skip=${skip}&limit=${limit}`);
+  return response.data;
+};
+
+export const deleteLastMessagePairAsync = async (chatLogId) => {
+  const response = await sinuxApi.delete(`/chat/logs/${chatLogId}/messages/last`);
+  return response.data;
+};
+
+export const editMessageContentAsync = async (chatLogId, messageId, content) => {
+  const response = await sinuxApi.put(`/chat/logs/${chatLogId}/messages/${messageId}`, { content });
   return response.data;
 };

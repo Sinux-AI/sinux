@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { Building2, ArrowRight, Loader2, CheckCircle2, Crown } from "lucide-react";
 import { createOrg } from "../services/organizationService";
 import { useAuthStore } from "../authentication/authStore";
@@ -7,7 +7,9 @@ import { Button } from "../components/ui/Button";
 
 export default function CreateOrg() {
   const navigate = useNavigate();
-  const { updateOrganization, displayName } = useAuthStore();
+  const { updateOrganization, displayName, tier } = useAuthStore();
+
+  if (tier < 2) return <Navigate to="/dashboard" replace />;
 
   const [orgName, setOrgName] = useState("");
   const [loading, setLoading] = useState(false);

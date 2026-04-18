@@ -1,4 +1,10 @@
+/**
+ * Agent Constants
+ * 
+ * ROLES are now partially driven by the personalities in the Bootstrap config.
+ */
 
+// We keep a static list of roles for UI classification if the backend doesn't provide it
 export const ROLES = ["Researcher", "Analyst", "Developer", "Creative", "Security", "Operator"];
 
 export const EMPTY_FORM = {

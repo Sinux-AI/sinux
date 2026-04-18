@@ -19,6 +19,7 @@ import { getTierLabel } from "../constants/tiers";
 const WalletPage = () => {
   const { organizationId, walletBalance, updateBilling, isLocked, preferences, tier } = useAuthStore();
   const [activeTab, setActiveTab] = useState("usage");
+  const [expandedRow, setExpandedRow] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [rates, setRates] = useState(null);
@@ -88,7 +89,9 @@ const WalletPage = () => {
         <GlassCard className="lg:col-span-8 p-8 border-white/10 bg-gradient-to-br from-primary/5 to-transparent">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
-              <p className="text-[10px] font-bold text-text-secondary uppercase tracking-[0.2em] mb-2">Organization Balance</p>
+              <p className="text-[10px] font-bold text-text-secondary uppercase tracking-[0.2em] mb-2">
+                {organizationId ? "Organization Balance" : "Personal Balance"}
+              </p>
               <h2 className="text-5xl font-bold text-white tracking-tighter">{formatCurrency(walletBalance)}</h2>
               <div className="flex gap-2 mt-4">
                 <Badge variant={isLocked ? "danger" : "success"}>{isLocked ? "Account Locked" : "Active"}</Badge>
@@ -161,14 +164,109 @@ const WalletPage = () => {
               {loading ? (
                 <tr><td colSpan="4" className="p-20 text-center text-text-secondary animate-pulse">Synchronizing ledger...</td></tr>
               ) : (
-                (activeTab === 'usage' ? usageRecords : transactions).map((item, i) => (
-                  <tr key={i} className="border-b border-white/5 hover:bg-white/[0.01]">
-                    <td className="p-6 font-bold text-white uppercase">{item.modelUsed || item.transactionType || 'API Call'}</td>
-                    <td className="p-6 text-text-secondary">{item.totalTokens?.toLocaleString() || '-'}</td>
-                    <td className="p-6 font-tech text-white">{formatCurrency(item.billedCostUsd || item.amount)}</td>
-                    <td className="p-6 text-right text-text-secondary">{new Date(item.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                ))
+                (activeTab === 'usage' ? usageRecords : transactions).map((item, i) => {
+                  const isExpanded = expandedRow === i;
+                  const hasDetails = activeTab === 'usage' && (item.inputTokenCost > 0 || item.outputTokenCost > 0 || item.surchargeCost > 0 || item.discountApplied > 0 || Object.keys(item.metadata || {}).length > 0);
+                  
+                  return (
+                    <React.Fragment key={i}>
+                      <tr 
+                        className={`border-b border-white/5 hover:bg-white/[0.01] transition-all cursor-pointer ${isExpanded ? 'bg-white/[0.02]' : ''}`}
+                        onClick={() => hasDetails && setExpandedRow(isExpanded ? null : i)}
+                      >
+                        <td className="p-6">
+                           <div className="flex items-center gap-3">
+                              {hasDetails && <ChevronRight size={14} className={`text-primary transition-transform ${isExpanded ? 'rotate-90' : ''}`} />}
+                              <div className="flex flex-col">
+                                 <span className="font-bold text-white uppercase tracking-tight">
+                                    {item.metadata?.ToolName || item.modelUsed || item.transactionType || 'API Call'}
+                                 </span>
+                                 <span className="text-[10px] text-text-secondary uppercase">
+                                    {item.metadata?.Type === 'ToolExecution' ? 'Tool Call' : (item.surchargeCost > 0 ? 'Surcharge' : 'Compute')}
+                                 </span>
+                              </div>
+                           </div>
+                        </td>
+                        <td className="p-6 text-text-secondary">
+                           {item.totalTokens > 0 ? `${item.totalTokens.toLocaleString()} tokens` : (item.metadata?.AgentCount ? `${item.metadata.AgentCount} specialists` : '-')}
+                        </td>
+                        <td className="p-6">
+                           <div className="flex flex-col">
+                              <span className="font-tech text-white">{formatCurrency(item.billedCostUsd || item.amount)}</span>
+                              {userCurrency !== "ZAR" && (
+                                <span className="text-[9px] text-text-secondary uppercase">R{(item.billedCostUsd || item.amount).toLocaleString()} ZAR</span>
+                              )}
+                           </div>
+                        </td>
+                        <td className="p-6 text-right text-text-secondary">{new Date(item.createdAt).toLocaleDateString()}</td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="bg-black/20 border-b border-white/5">
+                           <td colSpan="4" className="p-0">
+                              <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in slide-in-from-top-2 duration-300">
+                                 
+                                 {/* Token Breakdown */}
+                                 {(item.promptTokens > 0 || item.completionTokens > 0) && (
+                                   <div className="space-y-2">
+                                      <p className="text-[9px] font-bold text-primary uppercase tracking-widest mb-3">Compute Metrics</p>
+                                      <div className="flex justify-between text-[11px]">
+                                         <span className="text-text-secondary">Prompt Tokens ({item.promptTokens.toLocaleString()})</span>
+                                         <span className="text-white">R{item.inputTokenCost?.toFixed(4)}</span>
+                                      </div>
+                                      <div className="flex justify-between text-[11px]">
+                                         <span className="text-text-secondary">Completion Tokens ({item.completionTokens.toLocaleString()})</span>
+                                         <span className="text-white">R{item.outputTokenCost?.toFixed(4)}</span>
+                                      </div>
+                                   </div>
+                                 )}
+
+                                 {/* Surcharge Breakdown */}
+                                 {(item.surchargeCost > 0 || item.metadata?.BaseFee) && (
+                                   <div className="space-y-2">
+                                      <p className="text-[9px] font-bold text-accent uppercase tracking-widest mb-3">Orchestration & Tools</p>
+                                      {item.metadata?.Type === 'OrchestrationBase' && (
+                                        <div className="flex justify-between text-[11px]">
+                                           <span className="text-text-secondary">Base Fee ({item.metadata.Strategy})</span>
+                                           <span className="text-white">R{item.surchargeCost?.toFixed(2)}</span>
+                                        </div>
+                                      )}
+                                      {item.metadata?.AgentIds && (
+                                        <div className="flex justify-between text-[11px]">
+                                           <span className="text-text-secondary">Specialists ({item.metadata.AgentCount})</span>
+                                           <span className="text-white">R{item.surchargeCost?.toFixed(2)}</span>
+                                        </div>
+                                      )}
+                                      {item.metadata?.Type === 'ToolExecution' && (
+                                        <div className="flex justify-between text-[11px]">
+                                           <span className="text-text-secondary">Integration Fee</span>
+                                           <span className="text-white">R{item.surchargeCost?.toFixed(2)}</span>
+                                        </div>
+                                      )}
+                                   </div>
+                                 )}
+
+                                 {/* Promo & Metadata */}
+                                 <div className="space-y-2">
+                                    <p className="text-[9px] font-bold text-success uppercase tracking-widest mb-3">Incentives & Tags</p>
+                                    {item.discountApplied > 0 && (
+                                      <div className="flex justify-between text-[11px] bg-success/10 p-2 rounded-lg border border-success/20">
+                                         <span className="text-success font-bold">Early Bird Discount (-50%)</span>
+                                         <span className="text-success">-R{item.discountApplied.toFixed(2)}</span>
+                                      </div>
+                                    )}
+                                    <div className="flex flex-col gap-1 mt-2">
+                                       <span className="text-[10px] text-text-secondary">Reference: {item.chatLogId || item.id}</span>
+                                       {item.metadata?.AgentName && <span className="text-[10px] text-text-secondary">Executed by: {item.metadata.AgentName}</span>}
+                                    </div>
+                                 </div>
+
+                              </div>
+                           </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>

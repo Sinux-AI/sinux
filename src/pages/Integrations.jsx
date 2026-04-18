@@ -18,7 +18,8 @@ import { useAuthStore } from "../authentication/authStore";
 import { getAgentsAsync } from "../services/agentService";
 
 // API expects these exact string values
-import { CHANNEL_PLATFORMS, HTTP_METHODS, EMPTY_TOOL_FORM } from "../constants/integrations.js";
+import { HTTP_METHODS, EMPTY_TOOL_FORM, getPlatformIcon } from "../constants/integrations.js";
+import { useConfigStore } from "../stores/configStore";
 
 // ── Connect Channel Modal ─────────────────────────────────────────────────────
 function ConnectModal({ platform, agents, onClose, onSaved }) {
@@ -41,75 +42,85 @@ function ConnectModal({ platform, agents, onClose, onSaved }) {
         plainTextBotToken: botToken,
         organizationId,
       });
-      toast.success(`${platform.label} connected.`);
+      toast.success(`${platform.label || platform.id} connected.`);
       onSaved();
       onClose();
     } catch { toast.error("Connection failed. Check credentials."); }
     finally { setSaving(false); }
   };
 
+  const Icon = platform.icon || Terminal;
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <GlassCard className="max-w-md w-full p-8 border-primary/20">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-white/5 rounded-xl border border-white/10"><platform.icon className={platform.iconClass} /></div>
-            <div>
-              <h3 className="text-lg font-bold text-white">Connect {platform.label}</h3>
-              <p className="text-[10px] text-text-secondary uppercase tracking-widest">Secure credential uplink</p>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-background/40 backdrop-blur-[60px] animate-in fade-in duration-700 ease-out">
+      <GlassCard className="max-w-xl w-full p-14 border-border-glow rounded-[3rem] shadow-2xl relative overflow-hidden bg-surface">
+        {/* Decorative mask */}
+        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-[80px] -mr-10 -mt-10" />
+
+        <div className="flex justify-between items-start mb-12 relative z-10">
+          <div className="flex items-center gap-6">
+            <div className="p-4 bg-text-primary/5 rounded-[1.5rem] border border-border-glow shadow-sm">
+              <Icon className="text-primary scale-125" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-3xl font-black text-text-primary tracking-tighter uppercase leading-none">Connect {platform.label || platform.id}</h3>
+              <p className="text-[10px] text-text-secondary uppercase tracking-[0.3em] font-black opacity-40">Secure credential uplink</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 text-text-secondary hover:text-white">
-            <XCircle size={20} />
+          <button onClick={onClose} className="p-3 rounded-2xl border border-border-glow hover:bg-text-primary/5 text-text-secondary transition-all">
+            <X size={20} />
           </button>
         </div>
 
-        <div className="space-y-5">
-          <div>
-            <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest block mb-2">Target Agent</label>
+        <div className="space-y-8 relative z-10">
+          <div className="space-y-3">
+            <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.3em] block ml-1">Target Agent Cluster</label>
             <select value={agentProfileId} onChange={e => setAgentProfileId(e.target.value)}
-              className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-primary transition-all appearance-none">
-              <option value="">Select agent...</option>
+              className="w-full bg-text-primary/[0.03] border border-border-glow rounded-2xl px-6 py-4 text-text-primary text-sm outline-none focus:border-primary/40 transition-all appearance-none cursor-pointer font-bold shadow-inner">
+              <option value="">Select operational agent...</option>
               {agents.map(a => <option key={a.agentProfileId} value={a.agentProfileId}>{a.name}</option>)}
             </select>
           </div>
 
           {platform.id !== "Email" && (
-            <div>
-              <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest block mb-2">
-                {platform.id === "GitHub" ? "Personal Access Token" : "Bot Token"}
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.3em] block ml-1">
+                {platform.id === "GitHub" ? "Security Token" : "Bot Authentication"}
               </label>
               <input type="password" value={botToken} onChange={e => setBotToken(e.target.value)}
                 placeholder="xoxb-... / ghp_..."
-                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm outline-none focus:border-primary transition-all" />
+                className="w-full bg-text-primary/[0.03] border border-border-glow rounded-2xl px-6 py-4 text-text-primary font-mono text-sm outline-none focus:border-primary/40 transition-all shadow-inner" />
             </div>
           )}
 
-          <div>
-            <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest block mb-2">
-              {platform.id === "Email" ? "Email Address" : platform.id === "GitHub" ? "Repository (owner/repo)" : "Channel ID"}
+          <div className="space-y-3">
+            <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.3em] block ml-1">
+              {platform.id === "Email" ? "Relay Address" : platform.id === "GitHub" ? "Repository (Path)" : "Sequence ID"}
             </label>
             <input value={channelId} onChange={e => setChannelId(e.target.value)}
               placeholder={platform.id === "Email" ? "user@company.com" : platform.id === "GitHub" ? "owner/repo" : "C0123456789"}
-              className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm outline-none focus:border-primary transition-all" />
+              className="w-full bg-text-primary/[0.03] border border-border-glow rounded-2xl px-6 py-4 text-text-primary font-mono text-sm outline-none focus:border-primary/40 transition-all shadow-inner" />
           </div>
 
           {["Slack", "Discord"].includes(platform.id) && (
-            <div>
-              <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest block mb-2">Webhook URL (optional)</label>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.3em] block ml-1">Webhook Routing (optional)</label>
               <input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} placeholder="https://hooks.slack.com/..."
-                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm outline-none focus:border-primary transition-all" />
+                className="w-full bg-text-primary/[0.03] border border-border-glow rounded-2xl px-6 py-4 text-text-primary font-mono text-sm outline-none focus:border-primary/40 transition-all shadow-inner" />
             </div>
           )}
 
-          <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-xl border border-primary/10">
-            <ShieldCheck size={14} className="text-primary shrink-0" />
-            <p className="text-[10px] text-text-secondary leading-relaxed">AES-256 encrypted before storage.</p>
+          <div className="flex items-center gap-4 p-5 bg-primary/5 rounded-[1.5rem] border border-primary/10 shadow-sm mt-10">
+            <ShieldCheck size={20} className="text-primary shrink-0 opacity-70" />
+            <p className="text-[10px] text-text-secondary/70 leading-relaxed font-black uppercase tracking-widest leading-none">AES-256 encrypted before local persistence.</p>
           </div>
 
-          <Button variant="primary" size="lg" className="w-full rounded-xl shadow-neon-primary" onClick={handleSave} disabled={saving}>
-            {saving ? "Connecting..." : `Connect ${platform.label}`}
-          </Button>
+          <div className="flex gap-4 pt-4">
+             <Button variant="secondary" className="flex-1 rounded-2xl text-[10px] uppercase font-black tracking-widest h-14" onClick={onClose}>Cancel</Button>
+             <Button variant="primary" className="flex-1 rounded-2xl shadow-neon-primary text-[10px] uppercase font-black tracking-widest h-14" onClick={handleSave} disabled={saving}>
+               {saving ? "Handshaking..." : `Synchronize Cluster`}
+             </Button>
+          </div>
         </div>
       </GlassCard>
     </div>
@@ -135,42 +146,53 @@ function ManualToolForm({ organizationId, onSaved }) {
   };
 
   return (
-    <GlassCard className="p-8 border-white/5">
-      <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-        <Terminal size={16} className="text-accent" /> Manual Tool Builder
-      </h4>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-        <div className="sm:col-span-2">
-          <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest block mb-2">Tool Name *</label>
-          <input value={form.name} onChange={e => set("name", e.target.value)} placeholder="e.g. Send Slack Message"
-            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accent transition-all" />
-        </div>
-        <div>
-          <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest block mb-2">Endpoint URL *</label>
-          <input value={form.endpointUrl} onChange={e => set("endpointUrl", e.target.value)} placeholder="https://api.example.com/..."
-            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accent transition-all font-mono" />
-        </div>
-        <div>
-          <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest block mb-2">HTTP Method</label>
-          <select value={form.httpMethod} onChange={e => set("httpMethod", e.target.value)}
-            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accent transition-all appearance-none cursor-pointer">
-            {HTTP_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </div>
-        <div className="sm:col-span-2">
-          <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest block mb-2">Description</label>
-          <input value={form.description} onChange={e => set("description", e.target.value)} placeholder="What does this tool do?"
-            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accent transition-all" />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest block mb-2">JSON Schema (optional)</label>
-          <textarea value={form.jsonSchema} onChange={e => set("jsonSchema", e.target.value)}
-            placeholder='{"type": "object", "properties": {...}}'
-            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-mono outline-none focus:border-accent transition-all min-h-[80px] resize-none" />
+    <GlassCard className="p-12 border-border-glow rounded-[2.5rem] bg-surface-raised/30 relative overflow-hidden group/form">
+      <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/form:opacity-10 transition-opacity">
+         <Terminal size={120} className="text-primary" />
+      </div>
+      
+      <div className="flex items-center gap-4 mb-10 relative z-10">
+        <div className="p-3 bg-primary/10 rounded-2xl text-primary border border-primary/20"><Terminal size={20} /></div>
+        <div className="space-y-1">
+          <h4 className="text-xl font-black text-text-primary uppercase tracking-tight">Manual Tool Provision</h4>
+          <p className="text-[10px] text-text-secondary uppercase tracking-[0.3em] font-black opacity-40">Direct REST interface registration</p>
         </div>
       </div>
-      <Button variant="accent" className="w-full rounded-xl" onClick={handleSave} disabled={saving}>
-        <Save size={14} className="mr-2" /> {saving ? "Creating..." : "Create Tool"}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10 relative z-10">
+        <div className="sm:col-span-2 space-y-3">
+          <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.3em] ml-1">Universal Identifier</label>
+          <input value={form.name} onChange={e => set("name", e.target.value)} placeholder="e.g. Send Slack Message"
+            className="w-full bg-text-primary/[0.03] border border-border-glow rounded-[1.5rem] px-6 py-4 text-text-primary text-sm outline-none focus:border-primary/40 focus:bg-surface transition-all font-bold shadow-inner" />
+        </div>
+        <div className="space-y-3">
+          <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.3em] ml-1">Endpoint URL</label>
+          <input value={form.endpointUrl} onChange={e => set("endpointUrl", e.target.value)} placeholder="https://api.example.com/..."
+            className="w-full bg-text-primary/[0.03] border border-border-glow rounded-[1.5rem] px-6 py-4 text-text-primary text-sm outline-none focus:border-primary/40 focus:bg-surface transition-all font-mono shadow-inner" />
+        </div>
+        <div className="space-y-3">
+          <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.3em] ml-1">Method Selector</label>
+          <div className="relative">
+            <select value={form.httpMethod} onChange={e => set("httpMethod", e.target.value)}
+              className="w-full bg-text-primary/[0.03] border border-border-glow rounded-[1.5rem] px-6 py-4 text-text-primary text-sm outline-none focus:border-primary/40 focus:bg-surface transition-all appearance-none cursor-pointer font-black shadow-inner">
+              {HTTP_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="sm:col-span-2 space-y-3">
+          <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.3em] ml-1">Functional Description</label>
+          <input value={form.description} onChange={e => set("description", e.target.value)} placeholder="What does this tool do?"
+            className="w-full bg-text-primary/[0.03] border border-border-glow rounded-[1.5rem] px-6 py-4 text-text-primary text-sm outline-none focus:border-primary/40 focus:bg-surface transition-all font-bold shadow-inner" />
+        </div>
+        <div className="sm:col-span-2 space-y-3">
+          <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.3em] ml-1">Matrix Schema (JSON)</label>
+          <textarea value={form.jsonSchema} onChange={e => set("jsonSchema", e.target.value)}
+            placeholder='{"type": "object", "properties": {...}}'
+            className="w-full bg-text-primary/[0.03] border border-border-glow rounded-[1.5rem] p-6 text-text-primary text-xs font-mono outline-none focus:border-primary/40 focus:bg-surface transition-all min-h-[140px] resize-none shadow-inner" />
+        </div>
+      </div>
+      <Button variant="primary" className="w-full rounded-[1.5rem] shadow-neon-primary h-14 uppercase font-black text-[10px] tracking-[0.3em]" onClick={handleSave} disabled={saving}>
+        {saving ? "Registering Tool..." : "Provision Interface Asset"}
       </Button>
     </GlassCard>
   );
@@ -263,67 +285,72 @@ const Integrations = () => {
   ];
 
   return (
-    <div className="bg-background pb-20 relative isolate max-w-[1400px] mx-auto px-4 sm:px-8 w-full animate-in fade-in duration-700">
-      <div className="absolute top-[10%] -left-[5%] w-[400px] h-[400px] bg-accent/5 blur-[120px] rounded-full pointer-events-none -z-10" />
-      <div className="absolute bottom-[20%] -right-[5%] w-[500px] h-[500px] bg-primary/5 blur-[150px] rounded-full pointer-events-none -z-10" />
-
+    <div className="bg-background min-h-screen pb-32 relative isolate max-w-[1600px] mx-auto px-6 md:px-14 w-full animate-in fade-in slide-in-from-bottom-6 duration-1000 ease-out">
+      <div className="absolute top-[10%] -left-[5%] w-[400px] h-[400px] bg-primary/2 blur-[120px] rounded-full pointer-events-none -z-10" />
+      
       <PageHeader
         title="Connectors & APIs"
-        subtitle="Connect Sinux to communication platforms and register custom API tools for your agents."
+        subtitle="Manage secure communication uplinks and provision custom interface assets for autonomy."
       />
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-8 border-b border-white/5 pb-0">
+      <div className="flex gap-10 mb-16 border-b border-border-glow/50 pb-0 overflow-x-auto no-scrollbar">
         {TABS.map(t => (
           <button key={t.key} onClick={() => setActiveTab(t.key)}
-            className={`px-5 py-3 text-xs font-bold uppercase tracking-widest transition-all relative ${activeTab === t.key ? 'text-primary' : 'text-text-secondary hover:text-white'}`}>
+            className={`px-4 py-6 text-[11px] font-black uppercase tracking-[0.3em] transition-all relative whitespace-nowrap ${activeTab === t.key ? 'text-primary' : 'text-text-secondary/40 hover:text-text-primary'}`}>
             {t.label}
-            {activeTab === t.key && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary shadow-neon-primary" />}
+            {activeTab === t.key && <div className="absolute bottom-0 left-0 w-full h-[3px] bg-primary shadow-neon-primary rounded-full animate-in slide-in-from-left-2 duration-500" />}
           </button>
         ))}
       </div>
 
-      {/* ── Channel Connections ── */}
       {activeTab === "channels" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {CHANNEL_PLATFORMS.map(platform => {
-              // Match by platform string field (API returns ChannelConnectionProjection.platform)
-              const conn = connections.find(c => c.platform?.toLowerCase() === platform.id.toLowerCase());
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {useConfigStore.getState().integrationPlatforms.map(platform => {
+              const platformId = platform.id || platform.type;
+              const conn = connections.find(c => c.platform?.toLowerCase() === platformId.toLowerCase());
               const isActive = conn?.isActive === true;
+              const Icon = getPlatformIcon(platformId);
+              
               return (
-                <GlassCard key={platform.id} className="p-6 relative overflow-hidden group hover:border-white/10 transition-all">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="p-3 bg-white/5 rounded-xl border border-white/5 group-hover:border-white/15 transition-all">
-                      <platform.icon className={platform.iconClass} />
+                <GlassCard key={platformId} className="p-10 relative overflow-hidden group border-border-glow hover:border-text-primary/10 transition-all duration-500 rounded-[2.5rem] bg-surface shadow-sm active:scale-[0.99]">
+                   {/* Background Glow */}
+                   <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full blur-[60px] transition-opacity duration-700 ${isActive ? 'bg-success/10' : 'bg-primary/5'}`} />
+
+                  <div className="flex items-center justify-between mb-8 relative z-10">
+                    <div className="p-4 bg-text-primary/[0.03] rounded-2xl border border-border-glow group-hover:bg-primary/5 group-hover:border-primary/20 transition-all duration-500 shadow-sm">
+                      <Icon className="text-primary scale-110" />
                     </div>
-                    <Badge variant={isActive ? "success" : "ghost"}>
-                      {isActive ? "Connected" : "Not Connected"}
+                    <Badge variant={isActive ? "success" : "ghost"} className="px-5 py-2 border-border-glow text-[10px] font-black uppercase tracking-widest">
+                      {isActive ? "Authenticated" : "Link Required"}
                     </Badge>
                   </div>
 
-                  <h3 className="text-lg font-bold text-white mb-1">{platform.label}</h3>
-                  <p className="text-xs text-text-secondary font-sans mb-5 leading-relaxed">
-                    {isActive ? `Agent: ${conn?.agentProfileId?.slice(0, 8)}...` : `Connect your ${platform.label} workspace.`}
+                  <h3 className="text-2xl font-black text-text-primary mb-2 tracking-tight uppercase leading-none">{platform.label || platformId}</h3>
+                  <p className="text-[12px] text-text-secondary/60 font-medium mb-10 leading-relaxed pr-4">
+                    {isActive ? `Uplink verified with secondary cluster node.` : `Integrate ${platform.label || platformId} into the autonomous workflow loop.`}
                   </p>
 
-                  <div className="flex items-center gap-2 pt-4 border-t border-white/5">
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${isActive ? 'bg-success animate-pulse' : 'bg-white/10'}`} />
-                    <span className="text-[10px] text-text-secondary uppercase flex-1">{isActive ? "Active" : "Offline"}</span>
+                  <div className="flex items-center gap-4 pt-8 border-t border-border-glow/50 relative z-10">
+                    <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${isActive ? 'bg-success shadow-neon-success' : 'bg-text-primary/10'}`} />
+                    <span className="text-[10px] text-text-secondary uppercase font-black tracking-[0.2em] flex-1">{isActive ? "Heartbeat Stable" : "Offline"}</span>
 
-                    {conn && (
-                      <button onClick={() => handleDeleteConnection(conn)}
-                        className="p-1.5 rounded-lg hover:bg-error/10 text-text-secondary hover:text-error transition-all mr-1">
-                        <Trash2 size={12} />
-                      </button>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {conn && (
+                        <button onClick={() => handleDeleteConnection(conn)}
+                          className="p-3 rounded-xl hover:bg-error/10 text-text-secondary/40 hover:text-error transition-all active:scale-95 border border-transparent hover:border-error/20">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
 
-                    <Button
-                      variant={isActive ? "ghost" : "primary"} size="sm"
-                      className={`rounded-full px-5 text-xs ${isActive ? 'border border-white/10' : 'shadow-neon-primary'}`}
-                      onClick={() => isActive ? handleToggle(conn) : setConnectModal(platform)}>
-                      {isActive ? "Disable" : "Connect"}
-                    </Button>
+                      <Button
+                        variant={isActive ? "secondary" : "primary"}
+                        className={`rounded-2xl px-8 h-12 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm ${!isActive && 'shadow-neon-primary'}`}
+                        onClick={() => isActive ? handleToggle(conn) : setConnectModal({ ...platform, id: platformId, icon: Icon })}>
+                        {isActive ? "Decouple" : "Initiate Setup"}
+                      </Button>
+                    </div>
                   </div>
                 </GlassCard>
               );
@@ -331,24 +358,34 @@ const Integrations = () => {
           </div>
 
           {/* Security sidebar */}
-          <div className="space-y-5">
-            <GlassCard className="p-7 border-accent/20">
-              <div className="flex items-center gap-3 mb-5">
-                <ShieldCheck size={18} className="text-accent" />
-                <h4 className="text-xs font-bold text-white uppercase tracking-widest">Security</h4>
+          <div className="lg:col-span-4 space-y-6">
+            <GlassCard className="p-10 border-border-glow rounded-[2.5rem] bg-surface relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
+                 <ShieldCheck size={80} className="text-primary" />
               </div>
-              <div className="space-y-3 text-xs font-sans">
-                {[["AES-256 Encryption", "Active"], ["OIDC Handshakes", "Verified"], ["Audit Logging", "Enabled"]].map(([k, v]) => (
-                  <div key={k} className="flex justify-between">
-                    <span className="text-text-secondary">{k}</span>
-                    <span className="text-success font-tech uppercase text-[10px]">{v}</span>
+              <div className="flex items-center gap-4 mb-8 relative z-10">
+                <div className="p-2.5 bg-primary/10 rounded-xl text-primary"><ShieldCheck size={18} /></div>
+                <h4 className="text-[11px] font-black text-text-primary uppercase tracking-[0.3em]">Guardian Protocol</h4>
+              </div>
+              <div className="space-y-6 relative z-10">
+                {[
+                  { k: "RSA Encryption", v: "AES-256", status: "Verified" },
+                  { k: "OIDC Handshake", v: "Verifiable", status: "Active" },
+                  { k: "Cluster Sync", v: "Z-State", status: "Healthy" }
+                ].map((item) => (
+                  <div key={item.k} className="flex justify-between items-center group/sec">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-text-secondary/40 font-black uppercase tracking-widest block group-hover/sec:text-text-secondary transition-colors">{item.k}</span>
+                      <span className="text-xs font-mono font-bold text-text-primary">{item.v}</span>
+                    </div>
+                    <Badge variant="ghost" className="text-[8px] font-black uppercase tracking-widest bg-text-primary/5 border-border-glow text-success">{item.status}</Badge>
                   </div>
                 ))}
               </div>
             </GlassCard>
-            <GlassCard className="p-7">
-            <p className="text-[10px] text-text-secondary font-sans leading-relaxed">
-                Hardware-accelerated inference. All connections are routed through the Sinux Unified Gateway with production-grade security and logging.
+            <GlassCard className="p-8 border-border-glow rounded-[2rem] bg-text-primary/[0.02]">
+              <p className="text-[10px] text-text-secondary/50 font-medium leading-relaxed uppercase tracking-widest text-center px-4">
+                Hardware-accelerated orchestration verified. Sinux Unified Gateway enforces production-grade latency protection at the perimeter.
               </p>
             </GlassCard>
           </div>
@@ -357,41 +394,48 @@ const Integrations = () => {
 
       {/* ── Custom Tools ── */}
       {activeTab === "tools" && (
-        <div className="space-y-8">
+        <div className="space-y-12">
           <ManualToolForm organizationId={organizationId} onSaved={fetchData} />
 
           {/* Existing tools */}
-          <div>
-            <h4 className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-4">
-              Registered Tools ({loading ? "…" : tools.length})
-            </h4>
+          <div className="space-y-8">
+            <div className="flex justify-between items-end px-2">
+              <div className="space-y-1">
+                <h4 className="text-[11px] font-black text-text-primary uppercase tracking-[0.3em]">Inventory Registry</h4>
+                <p className="text-[10px] text-text-secondary opacity-40 uppercase font-black tracking-widest">Available interface assets: {tools.length}</p>
+              </div>
+            </div>
+
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {[...Array(3)].map((_, i) => <div key={i} className="h-40 rounded-2xl bg-white/[0.02] animate-pulse border border-white/5" />)}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, i) => <div key={i} className="h-64 rounded-[2.5rem] bg-text-primary/[0.02] animate-pulse border border-border-glow" />)}
               </div>
             ) : tools.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 opacity-30 border border-dashed border-white/10 rounded-2xl">
-                <Cpu size={32} className="mb-3" />
-                <p className="text-xs font-tech uppercase tracking-widest">No tools yet</p>
+              <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-border-glow rounded-[3rem] bg-text-primary/[0.01]">
+                <Cpu size={48} className="mb-6 text-text-secondary/20" />
+                <p className="text-[10px] font-black text-text-secondary/40 uppercase tracking-[0.4em]">Registry is currently vacant</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tools.map(tool => (
-                  <GlassCard key={tool.dynamicToolId || tool.id} className="p-6 border-white/5 hover:border-accent/30 transition-all group">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="p-3 bg-accent/10 rounded-xl text-accent group-hover:bg-accent group-hover:text-black transition-all">
-                        <Terminal size={16} />
+                  <GlassCard key={tool.dynamicToolId || tool.id} className="p-10 border-border-glow hover:border-text-primary/10 transition-all duration-500 rounded-[2.5rem] bg-surface group/tool shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover/tool:opacity-[0.08] transition-opacity pointer-events-none">
+                       <Code2 size={100} />
+                    </div>
+                    <div className="flex items-start justify-between mb-8 relative z-10">
+                      <div className="p-4 bg-text-primary/[0.03] rounded-2xl text-text-secondary group-hover/tool:bg-primary/5 group-hover/tool:text-primary transition-all duration-500 shadow-sm border border-border-glow group-hover/tool:border-primary/20">
+                        <Terminal size={20} />
                       </div>
                       <button onClick={() => handleDeleteTool(tool)}
-                        className="p-1.5 rounded-lg hover:bg-error/10 text-text-secondary hover:text-error transition-all opacity-0 group-hover:opacity-100">
-                        <Trash2 size={13} />
+                        className="p-3 rounded-xl hover:bg-error/10 text-text-secondary/20 hover:text-error transition-all opacity-0 group-hover/tool:opacity-100 border border-transparent hover:border-error/20">
+                        <Trash2 size={16} />
                       </button>
                     </div>
-                    <h4 className="text-sm font-bold text-white mb-1">{tool.name}</h4>
-                    <p className="text-[11px] text-text-secondary line-clamp-2 mb-4 font-sans">{tool.description}</p>
-                    <div className="flex items-center justify-between text-[9px] font-tech text-text-secondary uppercase border-t border-white/5 pt-3">
-                      <span>{tool.httpMethod || "GET"}</span>
-                      <span className="truncate max-w-[120px] text-right">{tool.endpointUrl}</span>
+                    <h4 className="text-xl font-black text-text-primary mb-2 uppercase tracking-tight relative z-10">{tool.name}</h4>
+                    <p className="text-[12px] text-text-secondary/60 font-medium line-clamp-2 mb-10 leading-relaxed pr-2 relative z-10">{tool.description}</p>
+                    <div className="flex items-center justify-between text-[10px] font-black text-text-secondary/40 uppercase tracking-[0.2em] border-t border-border-glow/50 pt-6 relative z-10">
+                      <span className="font-mono text-primary/60">{tool.httpMethod || "POST"}</span>
+                      <span className="truncate max-w-[150px] font-tech text-right">{tool.endpointUrl}</span>
                     </div>
                   </GlassCard>
                 ))}
@@ -403,70 +447,90 @@ const Integrations = () => {
 
       {/* ── AI Tool Builder ── */}
       {activeTab === "ai-builder" && (
-        <div className="max-w-3xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-          <div className="text-center">
-            <div className="inline-flex p-4 bg-accent/15 rounded-3xl mb-5 border border-accent/20">
-              <Code2 size={36} className="text-accent" />
+        <div className="max-w-4xl mx-auto space-y-16 animate-in slide-in-from-bottom-8 duration-700 ease-out">
+          <div className="text-center space-y-6">
+            <div className="inline-flex p-6 bg-primary/10 rounded-[2.5rem] border border-primary/20 mb-4 shadow-sm relative">
+               <div className="absolute inset-0 bg-primary/20 blur-[40px] rounded-full animate-pulse" />
+               <Code2 size={48} className="text-primary relative z-10" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-3">AI Tool Builder</h2>
-            <p className="text-text-secondary font-sans text-sm max-w-lg mx-auto leading-relaxed">
-              Paste raw API documentation (cURL examples, OpenAPI, Postman collections, or plain text). Our AI identifies endpoints and builds the tool schema automatically.
+            <h2 className="text-5xl font-black text-text-primary tracking-tighter uppercase leading-none">Intelligence Synthesis</h2>
+            <p className="text-text-secondary/60 font-medium text-lg max-w-2xl mx-auto leading-relaxed">
+              Inject raw specification manifests or cURL documentation. Our synthesis engine autonomously identifies endpoints and constructs interface assets.
             </p>
           </div>
 
-          <GlassCard className="p-8 border-accent/20">
+          <GlassCard className="p-14 border-border-glow rounded-[3rem] bg-surface shadow-xl relative overflow-hidden group/builder">
+            <div className="absolute -top-12 -right-12 w-64 h-64 bg-primary/5 rounded-full blur-[100px] group-hover/builder:bg-primary/10 transition-all duration-1000" />
+            
+            <div className="flex items-center justify-between mb-8">
+               <label className="text-[10px] font-black text-text-primary uppercase tracking-[0.4em] ml-2">Documentation Manifest</label>
+               <Badge variant="ghost" className="text-[8px] font-black uppercase tracking-widest border-border-glow px-4 py-1.5">AI Synthesis Mode</Badge>
+            </div>
+
             <textarea
               value={parseText} onChange={e => setParseText(e.target.value)}
-              placeholder="Paste cURL examples, OpenAPI spec, or documentation text here..."
-              className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white font-mono text-xs outline-none focus:border-accent transition-all min-h-[180px] resize-none mb-5"
+              placeholder="Paste cURL sequences, OpenAPI manifests, or raw documentation logic..."
+              className="w-full bg-text-primary/[0.03] border border-border-glow rounded-[2rem] p-10 text-text-primary font-mono text-sm outline-none focus:border-primary/40 focus:bg-surface transition-all min-h-[300px] resize-none shadow-inner leading-relaxed mb-10"
             />
-            <div className="flex items-center justify-between gap-4 mb-4">
-              <div className="flex gap-4 text-[10px] uppercase font-tech text-text-secondary">
-                {["OpenAPI / Swagger", "cURL Examples", "Postman Collections", "Plain Markdown"].map(l => (
-                  <span key={l} className="flex items-center gap-1.5"><CheckCircle2 size={10} className="text-accent" />{l}</span>
-                ))}
-              </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
+               {["OpenAPI Spec", "cURL Nodes", "Postman", "Markdown"].map(l => (
+                  <div key={l} className="flex items-center gap-3 px-5 py-3 bg-text-primary/5 rounded-2xl border border-border-glow group/tag hover:border-primary/20 transition-all">
+                     <CheckCircle2 size={12} className="text-primary opacity-40 group-hover/tag:opacity-100 transition-opacity" />
+                     <span className="text-[9px] font-black text-text-secondary uppercase tracking-widest">{l}</span>
+                  </div>
+               ))}
             </div>
-            <Button variant="accent" size="lg" className="w-full rounded-xl py-4" onClick={handleParse} disabled={isParsing || !parseText.trim()}>
-              {isParsing ? "Analyzing documentation..." : "Build Tool from Docs"}
+
+            <Button variant="primary" className="w-full rounded-[2rem] py-6 shadow-neon-primary h-16 text-[11px] uppercase font-black tracking-[0.3em]" onClick={handleParse} disabled={isParsing || !parseText.trim()}>
+              {isParsing ? "Synchronizing Logic..." : "Execute Synthesis Engine"}
             </Button>
           </GlassCard>
 
           {/* Parsed Draft Preview */}
           {parsedDraft && (
-            <GlassCard className="p-8 border-primary/30 bg-primary/5 animate-in slide-in-from-bottom-4 duration-300">
-              <div className="flex items-center justify-between mb-5">
-                <h4 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                  <CheckCircle2 size={16} className="text-primary" /> Draft Generated — Review Before Saving
-                </h4>
-                <button onClick={() => setParsedDraft(null)} className="p-1 rounded text-text-secondary hover:text-white">
-                  <XCircle size={16} />
+            <GlassCard className="p-12 border-primary/20 bg-primary/5 rounded-[3rem] animate-in slide-in-from-bottom-6 duration-1000 group/draft shadow-2xl relative overflow-hidden">
+               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/draft:opacity-10 transition-opacity">
+                  <CheckCircle2 size={100} className="text-primary" />
+               </div>
+               
+              <div className="flex items-center justify-between mb-10 relative z-10">
+                <div className="space-y-2">
+                   <h4 className="text-2xl font-black text-text-primary uppercase tracking-tight flex items-center gap-4">
+                     Generated Manifest
+                   </h4>
+                   <p className="text-[10px] text-primary uppercase font-black tracking-[0.3em]">Review required before registry synchronization</p>
+                </div>
+                <button onClick={() => setParsedDraft(null)} className="p-3 rounded-2xl border border-border-glow hover:bg-text-primary/10 text-text-secondary transition-all">
+                  <X size={20} />
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-4 mb-5 text-xs font-sans">
-                <div>
-                  <p className="text-[9px] text-text-secondary uppercase mb-1">Name</p>
-                  <p className="text-white font-bold">{parsedDraft.name || "—"}</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 relative z-10">
+                <div className="p-8 bg-surface rounded-[2rem] border border-border-glow space-y-2">
+                  <p className="text-[10px] text-text-secondary/40 font-black uppercase tracking-widest">Interface Name</p>
+                  <p className="text-lg font-black text-text-primary uppercase">{parsedDraft.name || "—"}</p>
                 </div>
-                <div>
-                  <p className="text-[9px] text-text-secondary uppercase mb-1">Method</p>
-                  <p className="text-white font-bold">{parsedDraft.httpMethod || "GET"}</p>
+                <div className="p-8 bg-surface rounded-[2rem] border border-border-glow space-y-2">
+                  <p className="text-[10px] text-text-secondary/40 font-black uppercase tracking-widest">HTTP Method</p>
+                  <p className="text-lg font-black text-primary font-mono">{parsedDraft.httpMethod || "POST"}</p>
                 </div>
-                <div className="col-span-2">
-                  <p className="text-[9px] text-text-secondary uppercase mb-1">Endpoint</p>
-                  <p className="text-white font-mono text-xs">{parsedDraft.endpointUrl || "—"}</p>
+                <div className="md:col-span-2 p-8 bg-surface rounded-[2rem] border border-border-glow space-y-2">
+                  <p className="text-[10px] text-text-secondary/40 font-black uppercase tracking-widest">Target Endpoint</p>
+                  <p className="text-sm font-mono font-bold text-text-primary break-all">{parsedDraft.endpointUrl || "—"}</p>
                 </div>
-                <div className="col-span-2">
-                  <p className="text-[9px] text-text-secondary uppercase mb-1">Description</p>
-                  <p className="text-text-secondary text-xs">{parsedDraft.description || "—"}</p>
+                <div className="md:col-span-2 p-8 bg-surface rounded-[2rem] border border-border-glow space-y-2">
+                  <p className="text-[10px] text-text-secondary/40 font-black uppercase tracking-widest">Behavioral Description</p>
+                  <p className="text-sm text-text-secondary font-medium leading-relaxed">{parsedDraft.description || "—"}</p>
                 </div>
               </div>
-              <div className="flex gap-3">
-                <Button variant="ghost" className="flex-1 rounded-xl border border-white/10" onClick={() => setParsedDraft(null)}>
-                  Discard
+
+              <div className="flex gap-6 relative z-10">
+                <Button variant="ghost" className="flex-1 rounded-2xl border border-border-glow h-16 text-[10px] uppercase font-black tracking-widest hover:bg-text-primary/5 transition-all" onClick={() => setParsedDraft(null)}>
+                  Discard Synthesis
                 </Button>
-                <Button variant="primary" className="flex-1 rounded-xl shadow-neon-primary" onClick={handleConfirmDraft}>
-                  <Save size={14} className="mr-2" /> Save Tool
+                <Button variant="primary" className="flex-1 rounded-2xl shadow-neon-primary h-16 text-[10px] uppercase font-black tracking-[0.3em]" onClick={handleConfirmDraft}>
+                  Provision Final Asset
                 </Button>
               </div>
             </GlassCard>

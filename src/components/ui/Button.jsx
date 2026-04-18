@@ -8,7 +8,7 @@ export function Button({
   disabled = false,
   ...props 
 }) {
-  const baseStyles = "inline-flex items-center justify-center font-tech font-bold uppercase tracking-widest transition-all duration-300 relative overflow-hidden group";
+  const baseStyles = "inline-flex items-center justify-center font-tech font-bold uppercase tracking-widest transition-all duration-200 ease-out active:scale-[0.98] relative overflow-hidden group";
   
   const sizeStyles = {
     sm: "px-4 py-2 text-[10px]",
@@ -17,11 +17,11 @@ export function Button({
   };
 
   const variantStyles = {
-    primary: "bg-primary text-black hover:bg-white hover:text-black hover:shadow-neon-primary disabled:bg-primary/50",
+    primary: "bg-primary text-background hover:bg-text-primary hover:text-background hover:shadow-neon-primary disabled:bg-primary/50",
     secondary: "bg-transparent border border-border-primary text-primary hover:bg-primary/10 hover:shadow-neon-primary",
-    accent: "bg-accent text-black hover:bg-white hover:text-black hover:shadow-neon-accent",
-    ghost: "bg-transparent text-text-secondary hover:text-white hover:bg-white/5",
-    danger: "bg-secondary text-white hover:bg-white hover:text-secondary hover:shadow-neon-pink",
+    accent: "bg-accent text-background hover:text-background hover:shadow-neon-accent",
+    ghost: "bg-transparent text-text-secondary hover:text-text-primary hover:bg-text-primary/10",
+    danger: "bg-secondary text-background hover:text-background hover:shadow-neon-pink",
   };
 
   return (

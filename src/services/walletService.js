@@ -1,4 +1,11 @@
 import { sinuxApi } from "./api.config";
+import { useAuthStore } from "../authentication/authStore";
+
+const applyOrgIfTier = (orgId) => {
+  const tier = useAuthStore.getState().tier;
+  return tier >= 2 ? orgId : null;
+};
+
 
 /**
  * Fetches the complete capability matrix for all tiers (Basic, Pro, Premium, Advanced).
@@ -32,8 +39,9 @@ export const getExchangeRatesAsync = async () => {
  * `isLocked` lives on the Organization object — use organizationService.getMyOrg() to check it.
  */
 export const getBalanceAsync = async (organizationId) => {
-  const url = organizationId
-    ? `/billing/balance?organizationId=${organizationId}`
+  const validOrgId = applyOrgIfTier(organizationId);
+  const url = validOrgId
+    ? `/billing/balance?organizationId=${validOrgId}`
     : "/billing/balance";
   const response = await sinuxApi.get(url);
   return response.data;
@@ -41,22 +49,25 @@ export const getBalanceAsync = async (organizationId) => {
 
 export const getUsageAnalyticsAsync = async (organizationId, limit = 50) => {
   const params = new URLSearchParams({ limit });
-  if (organizationId) params.append("organizationId", organizationId);
+  const validOrgId = applyOrgIfTier(organizationId);
+  if (validOrgId) params.append("organizationId", validOrgId);
   const response = await sinuxApi.get(`/billing/usage?${params}`);
   return response.data;
 };
 
 export const getTransactionsAsync = async (organizationId, limit = 20) => {
   const params = new URLSearchParams({ limit });
-  if (organizationId) params.append("organizationId", organizationId);
+  const validOrgId = applyOrgIfTier(organizationId);
+  if (validOrgId) params.append("organizationId", validOrgId);
   const response = await sinuxApi.get(`/billing/transactions?${params}`);
   return response.data;
 };
 
 export const initializeTopUpAsync = async (amount, organizationId) => {
+  const validOrgId = applyOrgIfTier(organizationId);
   const response = await sinuxApi.post("/billing/topup", {
     amount,
-    organizationId,
+    organizationId: validOrgId,
   });
   return response.data; // Returns { authorization_url, reference, ... }
 };
@@ -65,6 +76,9 @@ export const initializeTopUpAsync = async (amount, organizationId) => {
  * Purchases a tier upgrade using current wallet balance.
  */
 export const purchaseTierAsync = async (tierLevel, organizationId) => {
-  const response = await sinuxApi.post("/webhook/paystack");
+  const response = await sinuxApi.post("/billing/purchase-tier", {
+    tierLevel,
+    organizationId
+  });
   return response.data;
 };

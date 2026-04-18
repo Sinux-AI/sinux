@@ -40,7 +40,7 @@ const AuthRequiredModal = () => {
         aria-modal="true"
         aria-labelledby="auth-modal-title"
       >
-        <div className="bg-[#0a0a0f] border border-white/10 rounded-[2rem] p-10 shadow-2xl text-center">
+        <div className="bg-surface-raised border border-border-glow rounded-[2rem] p-10 shadow-2xl text-center">
           {/* Icon */}
           <div className="mx-auto mb-6 w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
             <Lock size={28} className="text-primary" />
@@ -75,7 +75,7 @@ const AuthRequiredModal = () => {
               </Button>
             </Link>
             <Link to="/pricing" className="flex-1">
-              <Button variant="ghost" size="lg" className="w-full rounded-xl border border-white/10">
+              <Button variant="ghost" size="lg" className="w-full rounded-xl border border-border-glow">
                 <Zap size={16} className="mr-2" />
                 View Pricing
               </Button>
